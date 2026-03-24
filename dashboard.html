@@ -139,7 +139,7 @@
     <div class="header-right">
       <div class="user-badge">
         <div class="user-avatar" id="user-avatar">–</div>
-        <span id="role-badge" class="badge badge-neutral" style="display:none;margin-right:4px;"></span><span id="user-name">Chargement…</span>
+        <span id="user-name">Chargement…</span>
       </div>
       <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -156,7 +156,7 @@
       Tableau de bord
     </a>
     <div class="nav-section">Modules</div>
-    <a href="database.html" class="nav-item" data-role="manager">
+    <a href="database.html" class="nav-item">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       Base articles
     </a>
@@ -169,7 +169,7 @@
       Inventaire
     </a>
     <div class="nav-section">Configuration</div>
-    <a href="settings.html" class="nav-item" data-role="admin"">
+    <a href="settings.html" class="nav-item"">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
       Réglages
     </a>
@@ -219,7 +219,7 @@
 
     <!-- Module Cards -->
     <div class="module-cards">
-      <a href="database.html" class="module-card mod-db" data-role="manager">
+      <a href="database.html" class="module-card mod-db">
         <div class="mod-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         </div>
@@ -301,7 +301,6 @@
 
 <script type="module">
 import { auth, db } from './js/firebase.js';
-import { fetchUserRole, applyRoleRestrictions, guardPage, clearRole } from './js/roles.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { collection, getCountFromServer, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { toast, formatDateTime } from './js/utils.js';
@@ -309,23 +308,6 @@ import { toast, formatDateTime } from './js/utils.js';
 // Auth guard
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = 'index.html'; return; }
-  await fetchUserRole(user);
-  applyRoleRestrictions();
-
-  // Message accès refusé si redirigé depuis une page protégée
-  const denied = sessionStorage.getItem('soleste_access_denied');
-  if (denied) {
-    const labels = { manager: 'Base articles', admin: 'Réglages' };
-    const banner = document.getElementById('access-denied-banner');
-    const msg    = document.getElementById('access-denied-msg');
-    if (banner && msg) {
-      msg.textContent = `Accès refusé — le module "${labels[denied] || denied}" requiert un niveau supérieur.`;
-      banner.classList.remove('hidden');
-      banner.style.display = 'flex';
-      setTimeout(() => { banner.style.display = 'none'; }, 5000);
-    }
-    sessionStorage.removeItem('soleste_access_denied');
-  }
 
   // Display user info
   const name = user.displayName || user.email.split('@')[0];

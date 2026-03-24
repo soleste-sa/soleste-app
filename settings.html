@@ -86,7 +86,7 @@
     <div class="header-right">
       <div class="user-badge">
         <div class="user-avatar" id="user-avatar">–</div>
-        <span id="role-badge" class="badge badge-neutral" style="display:none;margin-right:4px;"></span><span id="user-name">–</span>
+        <span id="user-name">–</span>
       </div>
       <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -103,7 +103,7 @@
       Tableau de bord
     </a>
     <div class="nav-section">Modules</div>
-    <a href="database.html" class="nav-item" data-role="manager"">
+    <a href="database.html" class="nav-item"">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       Base articles
     </a>
@@ -116,7 +116,7 @@
       Inventaire
     </a>
     <div class="nav-section">Configuration</div>
-    <a href="settings.html" class="nav-item" data-role="admin" active">
+    <a href="settings.html" class="nav-item" active">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
       Réglages
     </a>
@@ -332,7 +332,6 @@
 
 <script type="module">
 import { auth, db } from './js/firebase.js';
-import { fetchUserRole, applyRoleRestrictions, guardPage, clearRole } from './js/roles.js';
 import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { toast, formatCurrency } from './js/utils.js';
 import { getPlaces, createPlace, deletePlace, listenPlaces } from './js/inventory.js';
@@ -354,14 +353,11 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('settings-displayname').textContent = displayName;
   document.getElementById('settings-email').textContent = user.email;
   document.getElementById('display-name-input').value   = user.displayName || '';
-  await fetchUserRole(user);
-  applyRoleRestrictions();
   await init();
 });
 
 document.getElementById('logout-btn')?.addEventListener('click', async () => {
   const { signOut } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-  clearRole();
   await signOut(auth);
   window.location.href = 'index.html';
 });
