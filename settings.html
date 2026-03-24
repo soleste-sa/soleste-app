@@ -354,11 +354,14 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('settings-displayname').textContent = displayName;
   document.getElementById('settings-email').textContent = user.email;
   document.getElementById('display-name-input').value   = user.displayName || '';
+  await fetchUserRole(user);
+  applyRoleRestrictions();
   await init();
 });
 
 document.getElementById('logout-btn')?.addEventListener('click', async () => {
   const { signOut } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+  clearRole();
   await signOut(auth);
   window.location.href = 'index.html';
 });
