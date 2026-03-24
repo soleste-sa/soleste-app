@@ -584,6 +584,29 @@ window.removeUser = async function(docId, email) {
   }
 };
 
+async function handleCreateUser() {
+  const name     = document.getElementById('new-user-name').value.trim();
+  const email    = document.getElementById('new-user-email').value.trim();
+  const password = document.getElementById('new-user-password').value.trim();
+  const role     = document.getElementById('new-user-role').value;
+  const errEl    = document.getElementById('add-user-error');
+
+  errEl.style.display = 'none';
+  if (!email || !password) { showUserError('Email et mot de passe requis.'); return; }
+  if (password.length < 6)  { showUserError('Mot de passe : 6 caractères minimum.'); return; }
+
+  document.getElementById('save-user-text').textContent = 'Création…';
+  document.getElementById('save-user-spinner').classList.remove('hidden');
+  document.getElementById('btn-save-user').disabled = true;
+
+  try {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, returnSecureToken: false })
+      }
     );
     const data = await res.json();
     if (!res.ok) {
@@ -618,9 +641,10 @@ window.removeUser = async function(docId, email) {
     document.getElementById('save-user-spinner').classList.add('hidden');
     document.getElementById('btn-save-user').disabled = false;
   }
-});
+}
 
 }
+
 function showUserError(msg) {
   const el = document.getElementById('add-user-error');
   el.textContent = msg;
