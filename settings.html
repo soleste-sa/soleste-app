@@ -368,30 +368,26 @@ document.getElementById('logout-btn')?.addEventListener('click', async () => {
 
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
-  // Charger réglages
-  const settings = await getSettings();
-  if (settings.hourlyCost) {
-    document.getElementById('hourly-cost').value = settings.hourlyCost;
-    updateCostDisplay(settings.hourlyCost);
-  }
-
-  // Clé API depuis localStorage
+  // Clé API depuis localStorage (synchrone — toujours en premier)
   const apiKey = localStorage.getItem('soleste_anthropic_key') || '';
   if (apiKey) {
     document.getElementById('api-key-input').value = apiKey;
     showApiKeyStatus(true);
   }
 
-  // Places
-  listenPlaces(renderPlaces);
-  // Places (non bloquant)
-  listenPlaces(renderPlaces);
-
-  // Utilisateurs
-  loadUsers();
+  // Bindings UI (synchrone)
   setupUserBindings();
 
-  // Admin enregistré en tâche de fond (non bloquant)
+  // Lancer tout en parallèle — aucun await bloquant
+  getSettings().then(settings => {
+    if (settings.hourlyCost) {
+      document.getElementById('hourly-cost').value = settings.hourlyCost;
+      updateCostDisplay(settings.hourlyCost);
+    }
+  }).catch(e => console.warn('getSettings:', e));
+
+  listenPlaces(renderPlaces);
+  loadUsers();
   ensureAdminRegistered().catch(e => console.warn('ensureAdmin:', e));
 }
 
