@@ -278,13 +278,37 @@
           </div>
         </div>
 
+        <!-- EmailJS -->
+        <div class="card settings-section">
+          <div class="settings-section-title">✉ EmailJS (envoi commandes)</div>
+          <div class="settings-section-desc">Envoi automatique des commandes par email via votre Gmail</div>
+          <div class="form-group">
+            <label class="form-label">Service ID</label>
+            <input type="text" id="emailjs-service" class="form-control" placeholder="service_xxxxxxx">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Template ID</label>
+            <input type="text" id="emailjs-template" class="form-control" placeholder="template_xxxxxxx">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Public Key</label>
+            <div style="display:flex;gap:10px;">
+              <input type="text" id="emailjs-pubkey" class="form-control" placeholder="Votre clé publique EmailJS">
+              <button class="btn btn-primary" id="btn-save-emailjs">Enregistrer</button>
+            </div>
+          </div>
+          <p class="form-hint">Créez un compte sur <a href="https://www.emailjs.com" target="_blank" style="color:var(--forest);">emailjs.com</a> · 200 emails/mois gratuits<br>
+          Template requis : <code>{{to_email}}</code> <code>{{subject}}</code> <code>{{message}}</code></p>
+          <div id="emailjs-status"></div>
+        </div>
+
         <!-- Infos app -->
         <div class="card">
           <div class="settings-section-title">ℹ️ À propos</div>
           <div class="settings-section-desc">Informations sur l'application</div>
           <table style="width:100%;font-size:.875rem;">
             <tr><td class="text-muted" style="padding:6px 0;">Application</td><td class="fw-600">SOLESTE</td></tr>
-            <tr><td class="text-muted" style="padding:6px 0;">Version</td><td>1.6.2</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0;">Version</td><td>1.6.3</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Propriétaire</td><td>Soleste SA</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Hébergement</td><td>GitHub Pages</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Base de données</td><td>Firebase Firestore</td></tr>
@@ -351,6 +375,7 @@ async function init() {
   listenPlaces(renderPlaces);
   loadUsers();
   setupUserBindings();
+  loadEmailJSSettings();
 
   // Réglages en arrière-plan
   getSettings().then(settings => {
@@ -618,6 +643,39 @@ function resetUserForm() {
 
 // Charger les utilisateurs au démarrage (dans init())
 // on l'appelle depuis le onAuthStateChanged existant
+
+// ── EmailJS ──────────────────────────────────────────────────
+async function loadEmailJSSettings() {
+  const s = await getSettings().catch(() => ({}));
+  if (s.emailjsServiceId)  document.getElementById('emailjs-service').value  = s.emailjsServiceId;
+  if (s.emailjsTemplateId) document.getElementById('emailjs-template').value = s.emailjsTemplateId;
+  if (s.emailjsPublicKey)  document.getElementById('emailjs-pubkey').value   = s.emailjsPublicKey;
+  if (s.emailjsPublicKey)  showEmailJSStatus(true);
+}
+
+function showEmailJSStatus(ok) {
+  const el = document.getElementById('emailjs-status');
+  if (!el) return;
+  el.innerHTML = ok
+    ? '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(39,174,96,.1);border-radius:var(--radius);font-size:.825rem;color:var(--success);margin-top:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> EmailJS configuré — envoi depuis Gmail actif</div>'
+    : '';
+}
+
+document.getElementById('btn-save-emailjs')?.addEventListener('click', async () => {
+  const serviceId  = document.getElementById('emailjs-service').value.trim();
+  const templateId = document.getElementById('emailjs-template').value.trim();
+  const publicKey  = document.getElementById('emailjs-pubkey').value.trim();
+  if (!serviceId || !templateId || !publicKey) {
+    toast('Remplissez les 3 champs EmailJS', 'warning'); return;
+  }
+  try {
+    await saveSettings({ emailjsServiceId: serviceId, emailjsTemplateId: templateId, emailjsPublicKey: publicKey });
+    showEmailJSStatus(true);
+    toast('Configuration EmailJS enregistrée ✓', 'success');
+  } catch (e) {
+    toast('Erreur enregistrement : ' + e.message, 'error');
+  }
+});
 
 // ── Nom d'affichage ──────────────────────────────────────────
 document.getElementById('btn-update-name').addEventListener('click', async () => {

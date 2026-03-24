@@ -136,6 +136,7 @@
       color: var(--muted);
     }
   </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 <div class="app-layout">
@@ -637,28 +638,72 @@ window.setSupplierStatus = async function(orderId, supName, newStatus) {
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
+// ── Configuration EmailJS ────────────────────────────────────
+// Ces 3 valeurs sont stockées dans Firestore (config/global)
+// et configurables depuis les Réglages
+let EMAILJS_SERVICE_ID  = '';
+let EMAILJS_TEMPLATE_ID = '';
+let EMAILJS_PUBLIC_KEY  = '';
+let emailjsReady = false;
+
+async function initEmailJS() {
+  try {
+    const { getSettings } = await import('./js/settings.js');
+    const s = await getSettings();
+    EMAILJS_SERVICE_ID  = s.emailjsServiceId  || '';
+    EMAILJS_TEMPLATE_ID = s.emailjsTemplateId || '';
+    EMAILJS_PUBLIC_KEY  = s.emailjsPublicKey  || '';
+    if (EMAILJS_PUBLIC_KEY) {
+      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+      emailjsReady = true;
+    }
+  } catch {}
+}
+initEmailJS();
+
 // ── Envoi par email ──────────────────────────────────────────
-window.sendByEmail = function(orderId, supName, supEmail) {
+window.sendByEmail = async function(orderId, supName, supEmail) {
   const order = allOrders.find(o => o.id === orderId);
   if (!order) return;
 
-  // Récupérer les items (compatibilité ancien/nouveau format)
   const supData = order.bySupplier?.[supName];
   const items   = Array.isArray(supData) ? supData : (supData?.items || []);
   const date    = new Date().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' });
 
-  const subject = encodeURIComponent(`Commande SOLESTE — ${date}`);
-  const body = encodeURIComponent(
+  const subject = `Commande SOLESTE — ${date}`;
+  const message =
     `Bonjour,\n\nVeuillez trouver ci-dessous notre commande du ${date} :\n\n` +
     items.map(i => `- ${i.name} | UC : ${i.uc||'—'} | Quantité : ${i.qty}`).join('\n') +
-    `\n\nCordialement,\nSOLESTE`
-  );
+    `\n\nCordialement,\nSOLESTE`;
 
-  // Utiliser location.href pour éviter le blocage popup navigateur
-  // Ouvrir AVANT l'updateStatus (contexte synchrone = geste utilisateur valide)
-  window.location.href = `mailto:${supEmail}?subject=${subject}&body=${body}`;
+  // ── Tentative envoi EmailJS ──────────────────────────────
+  if (emailjsReady && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+    try {
+      const btn = event?.target;
+      if (btn) { btn.textContent = 'Envoi…'; btn.disabled = true; }
 
-  // Mettre à jour le statut après un court délai
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: supEmail,
+        subject,
+        message,
+        supplier_name: supName,
+        order_date: date,
+      });
+
+      toast(`✉ Email envoyé à ${supName} (${supEmail})`, 'success');
+      setSupplierStatus(orderId, supName, 'sent');
+      return;
+    } catch (e) {
+      toast('Erreur EmailJS : ' + e.text + ' — Fallback mailto…', 'warning');
+    }
+  }
+
+  // ── Fallback : mailto si EmailJS non configuré ───────────
+  if (!emailjsReady) {
+    toast('EmailJS non configuré — ouverture du client mail local', 'warning');
+  }
+  window.location.href =
+    `mailto:${supEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
   setTimeout(() => setSupplierStatus(orderId, supName, 'sent'), 500);
 };
 
