@@ -86,7 +86,7 @@
     <div class="header-right">
       <div class="user-badge">
         <div class="user-avatar" id="user-avatar">–</div>
-        <span id="role-badge" class="badge badge-neutral" style="display:none;margin-right:4px;"></span><span id="user-name">–</span>
+        <span id="user-name">–</span>
       </div>
       <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -103,7 +103,7 @@
       Tableau de bord
     </a>
     <div class="nav-section">Modules</div>
-    <a href="database.html" class="nav-item" data-role="manager"">
+    <a href="database.html" class="nav-item">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       Base articles
     </a>
@@ -116,7 +116,7 @@
       Inventaire
     </a>
     <div class="nav-section">Configuration</div>
-    <a href="settings.html" class="nav-item" data-role="admin" active">
+    <a href="settings.html" class="nav-item active">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
       Réglages
     </a>
@@ -225,56 +225,6 @@
               <button class="btn btn-outline btn-sm" id="btn-update-name">Modifier</button>
             </div>
           </div>
-
-        <!-- Gestion des utilisateurs -->
-        <div class="card settings-section">
-          <div class="card-header">
-            <div>
-              <div class="settings-section-title">&#128101; Utilisateurs</div>
-              <div class="settings-section-desc">Gérez les accès à l'application</div>
-            </div>
-            <button class="btn btn-primary btn-sm" id="btn-add-user">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Ajouter
-            </button>
-          </div>
-          <div id="add-user-form" style="background:var(--cream);border-radius:var(--radius);padding:16px;margin-bottom:16px;display:none;">
-            <div class="form-row" style="margin-bottom:10px;">
-              <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Prénom / Nom d'affichage</label>
-                <input type="text" id="new-user-name" class="form-control" placeholder="Ex: Sophie">
-              </div>
-              <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Adresse e-mail</label>
-                <input type="email" id="new-user-email" class="form-control" placeholder="prenom@soleste.co">
-              </div>
-            </div>
-            <div class="form-row" style="margin-bottom:10px;">
-              <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Mot de passe temporaire</label>
-                <input type="text" id="new-user-password" class="form-control" placeholder="Min. 6 caractères">
-              </div>
-              <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Rôle</label>
-                <select id="new-user-role" class="form-control">
-                  <option value="staff">Staff</option>
-                  <option value="manager">Manager</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-            </div>
-            <div id="add-user-error" style="font-size:.8rem;color:var(--danger);margin-bottom:8px;display:none;"></div>
-            <div style="display:flex;gap:8px;justify-content:flex-end;">
-              <button class="btn btn-ghost btn-sm" id="btn-cancel-user">Annuler</button>
-              <button class="btn btn-primary btn-sm" id="btn-save-user">
-                <span id="save-user-text">Créer l'utilisateur</span>
-                <span id="save-user-spinner" class="spinner hidden" style="width:14px;height:14px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:white;"></span>
-              </button>
-            </div>
-          </div>
-          <div id="users-list">
-            <div class="text-center text-muted" style="padding:16px;font-size:.875rem;">Chargement…</div>
-          </div>
         </div>
 
         <!-- Configuration Firebase -->
@@ -332,15 +282,10 @@
 
 <script type="module">
 import { auth, db } from './js/firebase.js';
-import { fetchUserRole, applyRoleRestrictions, guardPage, clearRole } from './js/roles.js';
 import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { toast, formatCurrency } from './js/utils.js';
 import { getPlaces, createPlace, deletePlace, listenPlaces } from './js/inventory.js';
 import { getSettings, saveSettings } from './js/settings.js';
-import {
-  collection, doc, setDoc, getDocs, deleteDoc,
-  serverTimestamp, orderBy, query
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ── Auth ─────────────────────────────────────────────────────
 let currentUser = null;
@@ -381,52 +326,7 @@ async function init() {
 
   // Places
   listenPlaces(renderPlaces);
-  // Utilisateurs
-  loadUsers();
-  setupUserBindings();
-  // S'assurer que l'admin est enregistré dans app_users
-  await ensureAdminRegistered();
 }
-
-async function ensureAdminRegistered() {
-  if (!currentUser) return;
-  try {
-    const snap = await getDoc(doc(db, 'app_users', currentUser.uid));
-    if (!snap.exists()) {
-      await setDoc(doc(db, 'app_users', currentUser.uid), {
-        email:       currentUser.email,
-        displayName: currentUser.displayName || currentUser.email.split('@')[0],
-        role:        'admin',
-        createdAt:   serverTimestamp(),
-        createdBy:   'system',
-      });
-    }
-  } catch (e) {
-    console.warn('ensureAdminRegistered:', e.message);
-  }
-}
-
-function setupUserBindings() {
-  const btnAdd = document.getElementById('btn-add-user');
-  const btnCancel = document.getElementById('btn-cancel-user');
-  const btnSave = document.getElementById('btn-save-user');
-  if (!btnAdd) return;
-
-  btnAdd.addEventListener('click', () => {
-    const form = document.getElementById('add-user-form');
-    form.style.display = form.style.display === 'none' || form.style.display === '' ? 'block' : 'none';
-    if (form.style.display === 'block') document.getElementById('new-user-name').focus();
-  });
-
-  btnCancel.addEventListener('click', () => {
-    document.getElementById('add-user-form').style.display = 'none';
-    resetUserForm();
-  });
-
-  btnSave.addEventListener('click', handleCreateUser);
-}
-
-async function handleCreateUser() {
 
 // ── Places ───────────────────────────────────────────────────
 function renderPlaces(places) {
@@ -525,115 +425,6 @@ function showApiKeyStatus(ok) {
     ? '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(39,174,96,.1);border-radius:var(--radius);font-size:.825rem;color:var(--success);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> Clé API configurée</div>'
     : '<div style="padding:10px 14px;background:rgba(192,57,43,.1);border-radius:var(--radius);font-size:.825rem;color:var(--danger);">Aucune clé configurée</div>';
 }
-
-
-// ── Gestion utilisateurs ─────────────────────────────────────
-// Utilise l'API REST Firebase Identity pour créer des comptes
-// sans déconnecter l'utilisateur courant
-
-const FIREBASE_API_KEY = 'AIzaSyDSSIvbAWCXE1AfXwoKtERt3bewWrQhr40';
-const USERS_COL = 'app_users';
-
-// Charger la liste des utilisateurs depuis Firestore
-async function loadUsers() {
-  const list = document.getElementById('users-list');
-  try {
-    const snap = await getDocs(query(collection(db, USERS_COL), orderBy('createdAt', 'desc')));
-    const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderUsers(users);
-  } catch (e) {
-    list.innerHTML = '<p class="text-muted text-sm" style="padding:12px;">Erreur chargement utilisateurs.</p>';
-  }
-}
-
-function renderUsers(users) {
-  const list = document.getElementById('users-list');
-  if (!users.length) {
-    list.innerHTML = '<p class="text-muted text-sm" style="padding:12px 0;">Aucun autre utilisateur enregistré.</p>';
-    return;
-  }
-  const roleColors = { admin: 'badge-food', manager: 'badge-beverage', staff: 'badge-neutral' };
-  list.innerHTML = users.map(u => `
-    <div class="user-item" style="margin-bottom:8px;">
-      <div class="user-avatar-lg" style="background:var(--forest);font-size:.8rem;">
-        ${(u.displayName || u.email || '?').substring(0,2).toUpperCase()}
-      </div>
-      <div style="flex:1;">
-        <div class="fw-600">${u.displayName || '—'}</div>
-        <div class="text-muted text-sm">${u.email}</div>
-      </div>
-      <span class="badge ${roleColors[u.role] || 'badge-neutral'}" style="margin-right:8px;">${u.role || 'staff'}</span>
-      ${u.email !== currentUser.email ? `
-        <button class="btn btn-ghost btn-icon btn-sm" onclick="removeUser('${u.id}', '${u.email}')" data-tooltip="Supprimer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-        </button>` : '<span class="badge badge-success" style="font-size:.65rem;">Vous</span>'}
-    </div>`).join('');
-}
-
-window.removeUser = async function(docId, email) {
-  if (!confirm(`Supprimer l'accès de ${email} ?\nNote : leur compte Firebase Auth reste actif mais ils n'apparaîtront plus dans la liste.`)) return;
-  try {
-    await deleteDoc(doc(db, USERS_COL, docId));
-    toast(`${email} retiré`, 'success');
-    loadUsers();
-  } catch (e) {
-    toast('Erreur suppression', 'error');
-  }
-};
-
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      const msgs = {
-        'EMAIL_EXISTS':          'Cet email est déjà utilisé.',
-        'INVALID_EMAIL':         'Adresse e-mail invalide.',
-        'WEAK_PASSWORD':         'Mot de passe trop faible (min. 6 caractères).',
-        'OPERATION_NOT_ALLOWED': 'La création de comptes est désactivée dans Firebase.',
-      };
-      throw new Error(msgs[data.error?.message] || data.error?.message || 'Erreur création compte.');
-    }
-
-    // Sauvegarder dans Firestore (profil utilisateur)
-    const uid = data.localId;
-    await setDoc(doc(db, USERS_COL, uid), {
-      email,
-      displayName: name || email.split('@')[0],
-      role,
-      createdAt:   serverTimestamp(),
-      createdBy:   currentUser.email,
-    });
-
-    toast(`Compte créé : ${email}`, 'success');
-    document.getElementById('add-user-form').style.display = 'none';
-    resetUserForm();
-    loadUsers();
-
-  } catch (e) {
-    showUserError(e.message);
-  } finally {
-    document.getElementById('save-user-text').textContent = 'Créer l\'utilisateur';
-    document.getElementById('save-user-spinner').classList.add('hidden');
-    document.getElementById('btn-save-user').disabled = false;
-  }
-});
-
-}
-function showUserError(msg) {
-  const el = document.getElementById('add-user-error');
-  el.textContent = msg;
-  el.style.display = 'block';
-}
-
-function resetUserForm() {
-  document.getElementById('new-user-name').value     = '';
-  document.getElementById('new-user-email').value    = '';
-  document.getElementById('new-user-password').value = '';
-  document.getElementById('new-user-role').value     = 'staff';
-  document.getElementById('add-user-error').style.display = 'none';
-}
-
-// Charger les utilisateurs au démarrage (dans init())
-// on l'appelle depuis le onAuthStateChanged existant
 
 // ── Nom d'affichage ──────────────────────────────────────────
 document.getElementById('btn-update-name').addEventListener('click', async () => {
