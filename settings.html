@@ -382,7 +382,30 @@ async function init() {
   listenPlaces(renderPlaces);
   // Utilisateurs
   loadUsers();
+  setupUserBindings();
 }
+
+function setupUserBindings() {
+  const btnAdd = document.getElementById('btn-add-user');
+  const btnCancel = document.getElementById('btn-cancel-user');
+  const btnSave = document.getElementById('btn-save-user');
+  if (!btnAdd) return;
+
+  btnAdd.addEventListener('click', () => {
+    const form = document.getElementById('add-user-form');
+    form.style.display = form.style.display === 'none' || form.style.display === '' ? 'block' : 'none';
+    if (form.style.display === 'block') document.getElementById('new-user-name').focus();
+  });
+
+  btnCancel.addEventListener('click', () => {
+    document.getElementById('add-user-form').style.display = 'none';
+    resetUserForm();
+  });
+
+  btnSave.addEventListener('click', handleCreateUser);
+}
+
+async function handleCreateUser() {
 
 // ── Places ───────────────────────────────────────────────────
 function renderPlaces(places) {
@@ -537,43 +560,6 @@ window.removeUser = async function(docId, email) {
   }
 };
 
-// Bouton afficher formulaire
-document.getElementById('btn-add-user').addEventListener('click', () => {
-  const form = document.getElementById('add-user-form');
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
-  if (form.style.display === 'block') document.getElementById('new-user-name').focus();
-});
-
-document.getElementById('btn-cancel-user').addEventListener('click', () => {
-  document.getElementById('add-user-form').style.display = 'none';
-  resetUserForm();
-});
-
-document.getElementById('btn-save-user').addEventListener('click', async () => {
-  const name     = document.getElementById('new-user-name').value.trim();
-  const email    = document.getElementById('new-user-email').value.trim();
-  const password = document.getElementById('new-user-password').value.trim();
-  const role     = document.getElementById('new-user-role').value;
-  const errEl    = document.getElementById('add-user-error');
-
-  errEl.style.display = 'none';
-  if (!email || !password) { showUserError('Email et mot de passe requis.'); return; }
-  if (password.length < 6)  { showUserError('Mot de passe : 6 caractères minimum.'); return; }
-
-  // Spinner ON
-  document.getElementById('save-user-text').textContent = 'Création…';
-  document.getElementById('save-user-spinner').classList.remove('hidden');
-  document.getElementById('btn-save-user').disabled = true;
-
-  try {
-    // Créer le compte Firebase Auth via API REST (sans déconnecter l'utilisateur courant)
-    const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, returnSecureToken: false })
-      }
     );
     const data = await res.json();
     if (!res.ok) {
@@ -610,6 +596,7 @@ document.getElementById('btn-save-user').addEventListener('click', async () => {
   }
 });
 
+}
 function showUserError(msg) {
   const el = document.getElementById('add-user-error');
   el.textContent = msg;
