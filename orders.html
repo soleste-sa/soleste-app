@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOLESTE — Commandes</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ── Panier ── */
+    .order-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
+    .cart-panel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      position: sticky;
+      top: calc(var(--header-h) + 20px);
+      overflow: hidden;
+    }
+    .cart-header {
+      background: var(--forest-dk);
+      color: var(--cream);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cart-header h3 { font-family: var(--font-display); font-size: 1.1rem; }
+    .cart-count {
+      background: var(--clay);
+      color: white;
+      border-radius: 99px;
+      padding: 2px 10px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .cart-items { max-height: 380px; overflow-y: auto; }
+    .cart-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--cream-dk);
+    }
+    .cart-item-name { flex: 1; font-size: .85rem; font-weight: 500; min-width: 0; }
+    .cart-item-uc { font-size: .75rem; color: var(--muted); }
+    .cart-qty {
+      width: 60px;
+      padding: 4px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: .875rem;
+      text-align: center;
+      font-family: var(--font-mono);
+    }
+    .cart-qty:focus { border-color: var(--forest); outline: none; }
+    .cart-empty { padding: 32px; text-align: center; color: var(--muted); font-size: .875rem; }
+    .cart-footer { padding: 16px; border-top: 1px solid var(--border); }
+
+    /* ── Articles grille ── */
+    .article-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .article-item:hover { border-color: var(--forest); background: rgba(16,86,91,.03); }
+    .article-item.in-cart { border-color: var(--forest); background: rgba(16,86,91,.06); }
+    .article-item-left { min-width: 0; }
+    .article-item-name { font-weight: 500; font-size: .875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .article-item-sub { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+    .add-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: white;
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      flex-shrink: 0;
+    }
+    .add-btn:hover { background: var(--forest-lt); transform: scale(1.1); }
+    .add-btn.added { background: var(--olive); }
+
+    /* ── Historique ── */
+    .order-hist-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .order-hist-card:hover { box-shadow: var(--shadow); }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .status-draft     { background: var(--muted); }
+    .status-sent      { background: var(--warning); }
+    .status-received  { background: var(--success); }
+
+    /* ── Modal commande détail ── */
+    .supplier-block {
+      background: var(--cream);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .supplier-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .supplier-block-name { font-weight: 700; font-size: 1rem; color: var(--forest); }
+    .order-line-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 80px;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .85rem;
+      align-items: center;
+    }
+    .order-line-header {
+      font-size: .7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <header class="app-header">
+    <div class="logo">SOL<span>ESTE</span></div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">–</div>
+        <span id="user-name">–</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </header>
+
+  <nav class="app-sidebar">
+    <div class="nav-section">Navigation</div>
+    <a href="dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Tableau de bord
+    </a>
+    <div class="nav-section">Modules</div>
+    <a href="database.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Base articles
+    </a>
+    <a href="suppliers.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Fournisseurs
+    </a>
+    <a href="orders.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Commandes
+    </a>
+    <a href="menu.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Menu engineering
+    </a>
+    <a href="inventory.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Inventaire
+    </a>
+    <div class="nav-section">Configuration</div>
+    <a href="settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Réglages
+    </a>
+  </nav>
+
+  <main class="app-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Commandes</div>
+        <div class="page-subtitle">Créez une commande globale · Répartition automatique par fournisseur</div>
+      </div>
+      <button class="btn btn-primary" id="btn-new-order">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nouvelle commande
+      </button>
+    </div>
+
+    <!-- ── VUE : Nouvelle commande ── -->
+    <div id="view-new-order" class="hidden">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <button class="btn btn-ghost btn-sm" id="btn-cancel-order">← Annuler</button>
+        <h3 style="font-family:var(--font-display);color:var(--forest);">Nouvelle commande</h3>
+      </div>
+
+      <div class="order-layout">
+        <!-- Articles -->
+        <div>
+          <div class="toolbar">
+            <div class="search-bar" style="max-width:280px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="order-search" placeholder="Rechercher un article…">
+            </div>
+            <button class="filter-btn active" data-cat="ALL">Tous</button>
+            <button class="filter-btn" data-cat="FOOD">Food</button>
+            <button class="filter-btn" data-cat="BEVERAGE">Boisson</button>
+            <button class="filter-btn" data-cat="CLEANING">Entretien</button>
+            <button class="filter-btn" data-cat="ONE WAY">One Way</button>
+            <button class="filter-btn" data-cat="OFFICE">Bureau</button>
+          </div>
+          <div id="order-articles-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:4px;"></div>
+        </div>
+
+        <!-- Panier -->
+        <div class="cart-panel">
+          <div class="cart-header">
+            <h3>🛒 Panier</h3>
+            <span class="cart-count" id="cart-count">0</span>
+          </div>
+          <div class="cart-items" id="cart-items">
+            <div class="cart-empty">Ajoutez des articles depuis la liste</div>
+          </div>
+          <div class="cart-footer">
+            <button class="btn btn-primary btn-full" id="btn-validate-order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+              Valider la commande
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VUE : Historique ── -->
+    <div id="view-history">
+      <div id="orders-list" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="empty-state" style="padding:60px;">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Modal : détail commande (par fournisseur) -->
+<div class="modal-backdrop" id="modal-order">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-order-title">Commande</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-order')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-order-body"></div>
+    <div class="modal-footer" id="modal-order-footer"></div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db } from './js/firebase.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  collection, doc, addDoc, updateDoc, getDocs,
+  onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, debounce } from './js/utils.js';
+
+window.closeModal = closeModal;
+
+let allArticles  = [];
+let allSuppliers = [];
+let allOrders    = [];
+let cart         = {};   // { articleId: qty }
+let activeCat    = 'ALL';
+let currentUser  = null;
+
+// ── Auth ─────────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  const dn = user.displayName || user.email.split('@')[0];
+  document.getElementById('user-avatar').textContent = dn.substring(0,2).toUpperCase();
+  document.getElementById('user-name').textContent   = dn;
+  await init();
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await signOut(auth); window.location.href = 'index.html';
+});
+
+// ── Init ─────────────────────────────────────────────────────
+async function init() {
+  const [artSnap, supSnap] = await Promise.all([
+    getDocs(query(collection(db, 'articles'), orderBy('name'))),
+    getDocs(collection(db, 'suppliers')),
+  ]);
+  allArticles  = artSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  allSuppliers = supSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  // Historique en temps réel
+  onSnapshot(query(collection(db, 'orders'), orderBy('createdAt', 'desc')), snap => {
+    allOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderHistory();
+  });
+
+  setupModalClose('modal-order');
+  document.getElementById('btn-new-order').addEventListener('click', showNewOrder);
+  document.getElementById('btn-cancel-order').addEventListener('click', showHistory);
+  document.getElementById('btn-validate-order').addEventListener('click', validateOrder);
+  document.getElementById('order-search').addEventListener('input', debounce(renderArticles, 200));
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCat = btn.dataset.cat;
+      renderArticles();
+    });
+  });
+}
+
+// ── Vues ─────────────────────────────────────────────────────
+function showNewOrder() {
+  cart = {};
+  document.getElementById('view-history').classList.add('hidden');
+  document.getElementById('view-new-order').classList.remove('hidden');
+  document.getElementById('btn-new-order').classList.add('hidden');
+  renderArticles();
+  renderCart();
+}
+
+function showHistory() {
+  document.getElementById('view-new-order').classList.add('hidden');
+  document.getElementById('view-history').classList.remove('hidden');
+  document.getElementById('btn-new-order').classList.remove('hidden');
+}
+
+// ── Articles ─────────────────────────────────────────────────
+function renderArticles() {
+  const q = normalize(document.getElementById('order-search').value);
+  let filtered = allArticles.filter(a => {
+    if (activeCat !== 'ALL' && a.category !== activeCat) return false;
+    if (q && !fuzzyMatch(a.name, q) && !fuzzyMatch(a.supplier, q)) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('order-articles-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:32px;">Aucun article trouvé</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => {
+    const inCart = !!cart[a.id];
+    return `<div class="article-item ${inCart ? 'in-cart' : ''}" id="art-item-${a.id}">
+      <div class="article-item-left">
+        <div class="article-item-name">${escHtml(a.name)}</div>
+        <div class="article-item-sub">${escHtml(a.supplier||'—')} · ${escHtml(a.uc||'—')}</div>
+      </div>
+      <button class="add-btn ${inCart ? 'added' : ''}" onclick="addToCart('${a.id}')" title="${inCart ? 'Déjà dans le panier' : 'Ajouter'}">
+        ${inCart
+          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+        }
+      </button>
+    </div>`;
+  }).join('');
+}
+
+window.addToCart = function(articleId) {
+  if (!cart[articleId]) cart[articleId] = 1;
+  renderCart();
+  renderArticles();
+};
+
+// ── Panier ───────────────────────────────────────────────────
+function renderCart() {
+  const ids = Object.keys(cart);
+  document.getElementById('cart-count').textContent = ids.length;
+
+  const container = document.getElementById('cart-items');
+  if (!ids.length) {
+    container.innerHTML = `<div class="cart-empty">Ajoutez des articles depuis la liste</div>`;
+    return;
+  }
+
+  container.innerHTML = ids.map(id => {
+    const art = allArticles.find(a => a.id === id);
+    if (!art) return '';
+    return `<div class="cart-item">
+      <div class="cart-item-left" style="flex:1;min-width:0;">
+        <div class="cart-item-name">${escHtml(art.name)}</div>
+        <div class="cart-item-uc">${escHtml(art.uc||'—')}</div>
+      </div>
+      <input type="number" class="cart-qty" value="${cart[id]}" min="1" step="1"
+        onchange="updateCartQty('${id}', this.value)"
+        oninput="updateCartQty('${id}', this.value)">
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="removeFromCart('${id}')" style="color:var(--danger);margin-left:4px;" title="Retirer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+window.updateCartQty = function(id, val) {
+  const qty = parseFloat(val) || 1;
+  cart[id] = qty;
+};
+
+window.removeFromCart = function(id) {
+  delete cart[id];
+  renderCart();
+  renderArticles();
+};
+
+// ── Valider la commande ──────────────────────────────────────
+async function validateOrder() {
+  const ids = Object.keys(cart);
+  if (!ids.length) { toast('Le panier est vide', 'warning'); return; }
+
+  // Regrouper par fournisseur
+  const bySupplier = {};
+  ids.forEach(id => {
+    const art = allArticles.find(a => a.id === id);
+    if (!art) return;
+    const sup = art.supplier || 'Sans fournisseur';
+    if (!bySupplier[sup]) bySupplier[sup] = [];
+    bySupplier[sup].push({ articleId: id, name: art.name, uc: art.uc||'', qty: cart[id] });
+  });
+
+  try {
+    const orderRef = await addDoc(collection(db, 'orders'), {
+      createdAt:  serverTimestamp(),
+      createdBy:  currentUser.email,
+      status:     'draft',
+      itemCount:  ids.length,
+      suppliers:  Object.keys(bySupplier),
+      bySupplier, // { "VANUXEEM": [{articleId, name, uc, qty}], ... }
+    });
+    toast(`Commande créée — ${Object.keys(bySupplier).length} fournisseur${Object.keys(bySupplier).length>1?'s':''}`, 'success');
+    showHistory();
+    // Ouvrir directement la commande créée
+    setTimeout(() => {
+      const order = { id: orderRef.id, status: 'draft', createdBy: currentUser.email, bySupplier, suppliers: Object.keys(bySupplier), itemCount: ids.length, createdAt: { toDate: () => new Date() } };
+      openOrderModal(order);
+    }, 400);
+  } catch (e) {
+    toast('Erreur création commande : ' + e.message, 'error');
+  }
+}
+
+// ── Historique ───────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('orders-list');
+  if (!allOrders.length) {
+    list.innerHTML = `<div class="empty-state" style="padding:60px;">
+      <div class="empty-state-icon">📦</div>
+      <h3>Aucune commande</h3>
+      <p>Créez votre première commande en cliquant sur "Nouvelle commande".</p>
+    </div>`;
+    return;
+  }
+
+  const statusLabel = { draft: 'Brouillon', sent: 'Envoyée', received: 'Reçue' };
+  const statusClass = { draft: 'status-draft', sent: 'status-sent', received: 'status-received' };
+  const statusBadge = { draft: 'badge-neutral', sent: 'badge-warning', received: 'badge-success' };
+
+  list.innerHTML = allOrders.map(o => {
+    const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+    const sups = (o.suppliers||[]).join(', ');
+    return `<div class="order-hist-card" onclick="openOrderById('${o.id}')">
+      <div class="status-dot ${statusClass[o.status]||'status-draft'}"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:.9rem;">${date}</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${o.itemCount||0} article${(o.itemCount||0)>1?'s':''} · ${sups||'—'}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge ${statusBadge[o.status]||'badge-neutral'}">${statusLabel[o.status]||'Brouillon'}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--muted);"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.openOrderById = function(id) {
+  const order = allOrders.find(o => o.id === id);
+  if (order) openOrderModal(order);
+};
+
+// ── Modal détail commande ────────────────────────────────────
+function openOrderModal(order) {
+  const statusLabel = { draft: 'Brouillon', sent: 'Envoyée', received: 'Reçue' };
+  const date = order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' }) : 'Aujourd\'hui';
+
+  document.getElementById('modal-order-title').innerHTML =
+    `Commande du ${date} &nbsp;<span class="badge badge-neutral">${statusLabel[order.status]||'Brouillon'}</span>`;
+
+  const body = document.getElementById('modal-order-body');
+  const byS  = order.bySupplier || {};
+
+  body.innerHTML = Object.entries(byS).map(([supName, items]) => {
+    const sup = allSuppliers.find(s => normalize(s.name) === normalize(supName));
+    const supEmail = sup?.email || '';
+    const rows = items.map(item => `
+      <div class="order-line-row">
+        <span>${escHtml(item.name)}</span>
+        <span class="text-muted">${escHtml(item.uc||'—')}</span>
+        <span class="fw-600 mono text-right">${item.qty}</span>
+      </div>`).join('');
+
+    return `<div class="supplier-block">
+      <div class="supplier-block-header">
+        <div>
+          <div class="supplier-block-name">🏢 ${escHtml(supName)}</div>
+          ${supEmail ? `<div class="text-muted text-sm">✉ ${escHtml(supEmail)}</div>` : '<div class="text-muted text-sm" style="font-style:italic;">Aucun email renseigné dans Fournisseurs</div>'}
+        </div>
+        <div style="display:flex;gap:8px;">
+          ${order.status === 'draft' ? `
+            <button class="btn btn-outline btn-sm" onclick="markSupplierSent('${order.id}', '${escHtml(supName)}')">
+              ✓ Marqué envoyée
+            </button>
+            ${supEmail ? `<button class="btn btn-primary btn-sm" onclick="sendByEmail('${order.id}','${escHtml(supName)}','${escHtml(supEmail)}')">
+              ✉ Envoyer par mail
+            </button>` : ''}
+          ` : ''}
+        </div>
+      </div>
+      <div class="order-line-row order-line-header">
+        <span>Article</span><span>UC</span><span class="text-right">Qté</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  // Footer avec actions globales
+  const footer = document.getElementById('modal-order-footer');
+  footer.innerHTML = `
+    <button class="btn btn-secondary" onclick="closeModal('modal-order')">Fermer</button>
+    ${order.status === 'draft' ? `
+      <button class="btn btn-olive" onclick="updateOrderStatus('${order.id}','sent')">
+        ✓ Tout marquer comme envoyé
+      </button>` : ''}
+    ${order.status === 'sent' ? `
+      <button class="btn btn-primary" onclick="updateOrderStatus('${order.id}','received')">
+        📦 Marquer comme reçue
+      </button>` : ''}
+  `;
+
+  openModal('modal-order');
+}
+
+// ── Actions statut ───────────────────────────────────────────
+window.updateOrderStatus = async function(orderId, newStatus) {
+  try {
+    await updateDoc(doc(db, 'orders', orderId), { status: newStatus, updatedAt: serverTimestamp() });
+    const labels = { sent: 'Commande marquée comme envoyée', received: 'Commande marquée comme reçue' };
+    toast(labels[newStatus] || 'Statut mis à jour', 'success');
+    closeModal('modal-order');
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.markSupplierSent = function(orderId, supName) {
+  toast(`Commande ${supName} marquée comme envoyée`, 'success');
+  // On pourrait stocker le statut par fournisseur — pour l'instant on marque la commande globale
+  updateOrderStatus(orderId, 'sent');
+};
+
+// ── Envoi par email ──────────────────────────────────────────
+window.sendByEmail = function(orderId, supName, supEmail) {
+  const order = allOrders.find(o => o.id === orderId);
+  if (!order) return;
+  const items = order.bySupplier?.[supName] || [];
+  const date  = new Date().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+  const subject = encodeURIComponent(`Commande SOLESTE — ${date}`);
+  const body = encodeURIComponent(
+    `Bonjour,\n\nVeuillez trouver ci-dessous notre commande du ${date} :\n\n` +
+    items.map(i => `- ${i.name} | UC : ${i.uc||'—'} | Quantité : ${i.qty}`).join('\n') +
+    `\n\nCordialement,\nSOLESTE`
+  );
+
+  window.open(`mailto:${supEmail}?subject=${subject}&body=${body}`, '_blank');
+  updateOrderStatus(orderId, 'sent');
+};
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Afficher l'historique par défaut
+showHistory();
+</script>
+</body>
+</html>

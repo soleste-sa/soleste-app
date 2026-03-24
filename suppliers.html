@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOLESTE — Fournisseurs</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .supplier-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .supplier-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+    .supplier-avatar {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--forest), var(--forest-lt));
+      color: white;
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .95rem; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .supplier-name { font-weight: 600; font-size: .95rem; }
+    .supplier-meta { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .supplier-meta span + span::before { content: ' · '; }
+    .supplier-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 14px;
+    }
+    .badge-linked { background: rgba(16,86,91,.1); color: var(--forest); }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <header class="app-header">
+    <div class="logo">SOL<span>ESTE</span></div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">–</div>
+        <span id="user-name">–</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </header>
+
+  <nav class="app-sidebar">
+    <div class="nav-section">Navigation</div>
+    <a href="dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Tableau de bord
+    </a>
+    <div class="nav-section">Modules</div>
+    <a href="database.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Base articles
+    </a>
+    <a href="suppliers.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Fournisseurs
+    </a>
+    <a href="orders.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Commandes
+    </a>
+    <a href="menu.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Menu engineering
+    </a>
+    <a href="inventory.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Inventaire
+    </a>
+    <div class="nav-section">Configuration</div>
+    <a href="settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Réglages
+    </a>
+  </nav>
+
+  <main class="app-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Fournisseurs</div>
+        <div class="page-subtitle">Carnet d'adresses fournisseurs · Lié à la base articles</div>
+      </div>
+      <button class="btn btn-primary" id="btn-new-supplier">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nouveau fournisseur
+      </button>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar" style="margin-bottom:20px;">
+      <div class="search-bar" style="max-width:320px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" placeholder="Rechercher un fournisseur…">
+      </div>
+      <span id="supplier-count" class="text-muted text-sm" style="margin-left:auto;"></span>
+    </div>
+
+    <!-- Liste fournisseurs -->
+    <div id="suppliers-grid" class="supplier-grid">
+      <div class="empty-state" style="grid-column:1/-1;padding:60px;">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Modal fournisseur -->
+<div class="modal-backdrop" id="modal-supplier">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-supplier-title">Nouveau fournisseur</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-supplier')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nom du fournisseur <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="sup-name" class="form-control" placeholder="ex: VANUXEEM, Metro, Sysco…">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Téléphone</label>
+          <input type="tel" id="sup-phone" class="form-control" placeholder="+32 …">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail commandes</label>
+          <input type="email" id="sup-email" class="form-control" placeholder="commandes@fournisseur.be">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom du contact</label>
+        <input type="text" id="sup-contact" class="form-control" placeholder="ex: Jean Dupont">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea id="sup-notes" class="form-control" rows="3" placeholder="Délai de livraison, conditions, remarques…"></textarea>
+      </div>
+
+      <!-- Articles liés (lecture seule) -->
+      <div id="sup-linked-articles" class="hidden" style="margin-top:8px;">
+        <div class="label" style="margin-bottom:8px;">Articles liés dans la base</div>
+        <div id="sup-linked-list" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-supplier')">Annuler</button>
+      <button class="btn btn-danger btn-sm hidden" id="btn-delete-supplier">Supprimer</button>
+      <button class="btn btn-primary" id="btn-save-supplier">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db } from './js/firebase.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  collection, doc, addDoc, updateDoc, deleteDoc,
+  getDocs, onSnapshot, query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, debounce } from './js/utils.js';
+
+window.closeModal = closeModal;
+window.openModal  = openModal;
+
+let allSuppliers = [];
+let allArticles  = [];
+let editingId    = null;
+let currentUser  = null;
+
+// ── Auth ─────────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  const dn = user.displayName || user.email.split('@')[0];
+  document.getElementById('user-avatar').textContent = dn.substring(0,2).toUpperCase();
+  document.getElementById('user-name').textContent   = dn;
+  await init();
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await signOut(auth); window.location.href = 'index.html';
+});
+
+// ── Init ─────────────────────────────────────────────────────
+async function init() {
+  // Charger les articles pour afficher les liens
+  const artSnap = await getDocs(collection(db, 'articles'));
+  allArticles = artSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  // Écouter les fournisseurs en temps réel
+  onSnapshot(query(collection(db, 'suppliers'), orderBy('name')), snap => {
+    allSuppliers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Fusionner avec les fournisseurs présents dans articles mais pas encore dans suppliers
+    mergeArticleSuppliers();
+    renderSuppliers();
+  });
+
+  setupModalClose('modal-supplier');
+  document.getElementById('search-input').addEventListener('input', debounce(renderSuppliers, 200));
+  document.getElementById('btn-new-supplier').addEventListener('click', openNew);
+  document.getElementById('btn-save-supplier').addEventListener('click', handleSave);
+  document.getElementById('btn-delete-supplier').addEventListener('click', handleDelete);
+}
+
+// Fusionner les noms de fournisseurs présents dans articles
+function mergeArticleSuppliers() {
+  const existingNames = new Set(allSuppliers.map(s => normalize(s.name)));
+  const artSuppliers  = [...new Set(allArticles.map(a => a.supplier).filter(Boolean))];
+  artSuppliers.forEach(name => {
+    if (name && !existingNames.has(normalize(name))) {
+      allSuppliers.push({ id: null, name, _fromArticles: true });
+    }
+  });
+  allSuppliers.sort((a,b) => a.name.localeCompare(b.name));
+}
+
+// ── Rendu ─────────────────────────────────────────────────────
+function renderSuppliers() {
+  const q = normalize(document.getElementById('search-input').value);
+  const filtered = q
+    ? allSuppliers.filter(s => fuzzyMatch(s.name, q) || fuzzyMatch(s.contact, q) || fuzzyMatch(s.email, q))
+    : allSuppliers;
+
+  document.getElementById('supplier-count').textContent = `${filtered.length} fournisseur${filtered.length > 1 ? 's' : ''}`;
+
+  const grid = document.getElementById('suppliers-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:60px;">
+      <div class="empty-state-icon">🏢</div>
+      <h3>Aucun fournisseur</h3>
+      <p>Ajoutez votre premier fournisseur ou importez des articles avec un fournisseur renseigné.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(s => {
+    const initials = s.name.substring(0,2).toUpperCase();
+    const linkedCount = allArticles.filter(a => normalize(a.supplier) === normalize(s.name)).length;
+    const isNew = s._fromArticles;
+    return `<div class="supplier-card" onclick="openEdit('${s.id || ''}', '${escHtml(s.name)}')">
+      <div class="supplier-avatar">${initials}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="supplier-name">${escHtml(s.name)}${isNew ? ' <span class="badge badge-neutral" style="font-size:.65rem;vertical-align:middle;">Partiel</span>' : ''}</div>
+        <div class="supplier-meta">
+          ${s.contact ? `<span>👤 ${escHtml(s.contact)}</span>` : ''}
+          ${s.email   ? `<span>✉ ${escHtml(s.email)}</span>` : ''}
+          ${s.phone   ? `<span>📞 ${escHtml(s.phone)}</span>` : ''}
+          ${!s.contact && !s.email && !s.phone ? '<span style="color:var(--muted);font-style:italic;">Aucun contact renseigné</span>' : ''}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        ${linkedCount > 0 ? `<span class="badge badge-linked">${linkedCount} article${linkedCount>1?'s':''}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Ouvrir modal ─────────────────────────────────────────────
+function openNew() {
+  editingId = null;
+  document.getElementById('modal-supplier-title').textContent = 'Nouveau fournisseur';
+  document.getElementById('btn-delete-supplier').classList.add('hidden');
+  ['sup-name','sup-phone','sup-email','sup-contact','sup-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('sup-linked-articles').classList.add('hidden');
+  openModal('modal-supplier');
+  document.getElementById('sup-name').focus();
+}
+
+window.openEdit = function(id, nameFromCard) {
+  const sup = id ? allSuppliers.find(s => s.id === id) : allSuppliers.find(s => normalize(s.name) === normalize(nameFromCard));
+  if (!sup) { openNew(); document.getElementById('sup-name').value = nameFromCard; return; }
+
+  editingId = sup.id || null;
+  document.getElementById('modal-supplier-title').textContent = 'Modifier le fournisseur';
+  document.getElementById('btn-delete-supplier').classList.toggle('hidden', !sup.id);
+  document.getElementById('sup-name').value    = sup.name    || '';
+  document.getElementById('sup-phone').value   = sup.phone   || '';
+  document.getElementById('sup-email').value   = sup.email   || '';
+  document.getElementById('sup-contact').value = sup.contact || '';
+  document.getElementById('sup-notes').value   = sup.notes   || '';
+
+  // Articles liés
+  const linked = allArticles.filter(a => normalize(a.supplier) === normalize(sup.name));
+  const linkedSection = document.getElementById('sup-linked-articles');
+  if (linked.length) {
+    linkedSection.classList.remove('hidden');
+    document.getElementById('sup-linked-list').innerHTML = linked.slice(0,20).map(a =>
+      `<span class="badge badge-linked" style="font-size:.75rem;">${escHtml(a.name)}</span>`
+    ).join('') + (linked.length > 20 ? `<span class="text-muted text-sm">+${linked.length-20} autres</span>` : '');
+  } else {
+    linkedSection.classList.add('hidden');
+  }
+
+  openModal('modal-supplier');
+};
+
+// ── Save ─────────────────────────────────────────────────────
+async function handleSave() {
+  const name = document.getElementById('sup-name').value.trim();
+  if (!name) { toast('Le nom du fournisseur est obligatoire', 'error'); return; }
+
+  const data = {
+    name,
+    phone:   document.getElementById('sup-phone').value.trim(),
+    email:   document.getElementById('sup-email').value.trim(),
+    contact: document.getElementById('sup-contact').value.trim(),
+    notes:   document.getElementById('sup-notes').value.trim(),
+    updatedAt: serverTimestamp(),
+  };
+
+  try {
+    if (editingId) {
+      await updateDoc(doc(db, 'suppliers', editingId), data);
+      toast('Fournisseur mis à jour', 'success');
+    } else {
+      data.createdAt = serverTimestamp();
+      await addDoc(collection(db, 'suppliers'), data);
+      toast(`Fournisseur "${name}" ajouté`, 'success');
+    }
+    closeModal('modal-supplier');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+}
+
+// ── Delete ───────────────────────────────────────────────────
+async function handleDelete() {
+  if (!editingId) return;
+  const sup = allSuppliers.find(s => s.id === editingId);
+  if (!confirm(`Supprimer "${sup?.name}" ? Les articles liés ne seront pas modifiés.`)) return;
+  try {
+    await deleteDoc(doc(db, 'suppliers', editingId));
+    toast('Fournisseur supprimé', 'success');
+    closeModal('modal-supplier');
+  } catch (e) {
+    toast('Erreur suppression', 'error');
+  }
+}
+</script>
+</body>
+</html>
