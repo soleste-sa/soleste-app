@@ -374,36 +374,18 @@ async function init() {
   // Bindings UI (synchrone)
   setupUserBindings();
 
-  // Lancer tout en parallèle — aucun await bloquant
-  getSettings().then(settings => {
-    if (settings.hourlyCost) {
-      document.getElementById('hourly-cost').value = settings.hourlyCost;
-      updateCostDisplay(settings.hourlyCost);
+  // Charger données Firestore
+  getSettings().then(s => {
+    if (s.hourlyCost) {
+      document.getElementById('hourly-cost').value = s.hourlyCost;
+      updateCostDisplay(s.hourlyCost);
     }
-  }).catch(e => console.warn('getSettings:', e));
+  }).catch(() => {});
 
   listenPlaces(renderPlaces);
   loadUsers();
-  ensureAdminRegistered().catch(e => console.warn('ensureAdmin:', e));
 }
 
-async function ensureAdminRegistered() {
-  if (!currentUser) return;
-  try {
-    const snap = await getDoc(doc(db, 'app_users', currentUser.uid));
-    if (!snap.exists()) {
-      await setDoc(doc(db, 'app_users', currentUser.uid), {
-        email:       currentUser.email,
-        displayName: currentUser.displayName || currentUser.email.split('@')[0],
-        role:        'admin',
-        createdAt:   serverTimestamp(),
-        createdBy:   'system',
-      });
-    }
-  } catch (e) {
-    console.warn('ensureAdminRegistered:', e.message);
-  }
-}
 
 function setupUserBindings() {
   const btnAdd = document.getElementById('btn-add-user');
