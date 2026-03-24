@@ -246,9 +246,12 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('user-name').textContent = name;
   document.getElementById('user-avatar').textContent = name.slice(0,2).toUpperCase();
 
-  // Load settings (hourly rate)
-  const settSnap = await getDocs(collection(db, 'settings'));
-  settSnap.forEach(d => { if (d.id === 'general') hourlyRate = d.data().hourlyRate || 0; });
+  // Load settings (hourly rate) depuis config/global
+  try {
+    const { getSettings } = await import('./js/settings.js');
+    const s = await getSettings();
+    hourlyRate = parseFloat(s.hourlyCost) || 0;
+  } catch { hourlyRate = 0; }
 
   // Load articles
   const artSnap = await getDocs(collection(db, 'articles'));
@@ -413,7 +416,8 @@ function renderIngredients() {
     const lineCost = (ing.qty || 0) * (ing.priceUS || 0);
     return `<div class="ing-row">
       <span style="font-size:.88rem;">${escHtml(ing.name)} <small style="color:var(--muted);">(${escHtml(ing.us)})</small></span>
-      <input type="number" value="${ing.qty || ''}" min="0" step="0.001" placeholder="0"
+      <input type="number" value="${ing.qty || ''}" min="0" step="any" placeholder="0"
+        style="width:90px;"
         onchange="updateIngQty(${i}, this.value)" oninput="updateIngQty(${i}, this.value)">
       <span class="mono text-right" style="font-size:.82rem;">${formatCurrency(ing.priceUS, 4)}</span>
       <span class="mono text-right" style="font-size:.88rem;" id="ing-cost-${i}">${formatCurrency(lineCost)}</span>
