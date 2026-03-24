@@ -103,7 +103,7 @@
       Tableau de bord
     </a>
     <div class="nav-section">Modules</div>
-    <a href="database.html" class="nav-item"">
+    <a href="database.html" class="nav-item">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       Base articles
     </a>
@@ -116,7 +116,7 @@
       Inventaire
     </a>
     <div class="nav-section">Configuration</div>
-    <a href="settings.html" class="nav-item" active">
+    <a href="settings.html" class="nav-item active">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
       Réglages
     </a>
@@ -337,7 +337,7 @@ import { toast, formatCurrency } from './js/utils.js';
 import { getPlaces, createPlace, deletePlace, listenPlaces } from './js/inventory.js';
 import { getSettings, saveSettings } from './js/settings.js';
 import {
-  collection, doc, getDoc, setDoc, getDocs, deleteDoc,
+  collection, doc, setDoc, getDocs, deleteDoc,
   serverTimestamp, orderBy, query
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -364,50 +364,26 @@ document.getElementById('logout-btn')?.addEventListener('click', async () => {
 
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
-  // Clé API depuis localStorage (synchrone — toujours en premier)
+  // Charger réglages
+  const settings = await getSettings();
+  if (settings.hourlyCost) {
+    document.getElementById('hourly-cost').value = settings.hourlyCost;
+    updateCostDisplay(settings.hourlyCost);
+  }
+
+  // Clé API depuis localStorage
   const apiKey = localStorage.getItem('soleste_anthropic_key') || '';
   if (apiKey) {
     document.getElementById('api-key-input').value = apiKey;
     showApiKeyStatus(true);
   }
 
-  // Bindings UI (synchrone)
-  setupUserBindings();
-
-  // Charger données Firestore
-  getSettings().then(s => {
-    if (s.hourlyCost) {
-      document.getElementById('hourly-cost').value = s.hourlyCost;
-      updateCostDisplay(s.hourlyCost);
-    }
-  }).catch(() => {});
-
+  // Places
   listenPlaces(renderPlaces);
+  // Utilisateurs
   loadUsers();
+  setupUserBindings();
 }
-
-
-function setupUserBindings() {
-  const btnAdd = document.getElementById('btn-add-user');
-  const btnCancel = document.getElementById('btn-cancel-user');
-  const btnSave = document.getElementById('btn-save-user');
-  if (!btnAdd) return;
-
-  btnAdd.addEventListener('click', () => {
-    const form = document.getElementById('add-user-form');
-    form.style.display = form.style.display === 'none' || form.style.display === '' ? 'block' : 'none';
-    if (form.style.display === 'block') document.getElementById('new-user-name').focus();
-  });
-
-  btnCancel.addEventListener('click', () => {
-    document.getElementById('add-user-form').style.display = 'none';
-    resetUserForm();
-  });
-
-  btnSave.addEventListener('click', handleCreateUser);
-}
-
-async function handleCreateUser() {
 
 // ── Places ───────────────────────────────────────────────────
 function renderPlaces(places) {
@@ -562,66 +538,84 @@ window.removeUser = async function(docId, email) {
   }
 };
 
-async function handleCreateUser() {
-  const name     = document.getElementById('new-user-name').value.trim();
-  const email    = document.getElementById('new-user-email').value.trim();
-  const password = document.getElementById('new-user-password').value.trim();
-  const role     = document.getElementById('new-user-role').value;
-  const errEl    = document.getElementById('add-user-error');
 
-  errEl.style.display = 'none';
-  if (!email || !password) { showUserError('Email et mot de passe requis.'); return; }
-  if (password.length < 6)  { showUserError('Mot de passe : 6 caractères minimum.'); return; }
+function setupUserBindings() {
+  const btnAdd    = document.getElementById('btn-add-user');
+  const btnCancel = document.getElementById('btn-cancel-user');
+  const btnSave   = document.getElementById('btn-save-user');
+  if (!btnAdd) return;
 
-  document.getElementById('save-user-text').textContent = 'Création…';
-  document.getElementById('save-user-spinner').classList.remove('hidden');
-  document.getElementById('btn-save-user').disabled = true;
+  // Bouton afficher formulaire
+  btnAdd.addEventListener('click', () => {
+    const form = document.getElementById('add-user-form');
+    form.style.display = form.style.display === 'none' || !form.style.display ? 'block' : 'none';
+    if (form.style.display === 'block') document.getElementById('new-user-name').focus();
+  });
 
-  try {
-    const res = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, returnSecureToken: false })
-      }
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      const msgs = {
-        'EMAIL_EXISTS':          'Cet email est déjà utilisé.',
-        'INVALID_EMAIL':         'Adresse e-mail invalide.',
-        'WEAK_PASSWORD':         'Mot de passe trop faible (min. 6 caractères).',
-        'OPERATION_NOT_ALLOWED': 'La création de comptes est désactivée dans Firebase.',
-      };
-      throw new Error(msgs[data.error?.message] || data.error?.message || 'Erreur création compte.');
-    }
-
-    // Sauvegarder dans Firestore (profil utilisateur)
-    const uid = data.localId;
-    await setDoc(doc(db, USERS_COL, uid), {
-      email,
-      displayName: name || email.split('@')[0],
-      role,
-      createdAt:   serverTimestamp(),
-      createdBy:   currentUser.email,
-    });
-
-    toast(`Compte créé : ${email}`, 'success');
+  btnCancel.addEventListener('click', () => {
     document.getElementById('add-user-form').style.display = 'none';
     resetUserForm();
-    loadUsers();
+  });
 
-  } catch (e) {
-    showUserError(e.message);
-  } finally {
-    document.getElementById('save-user-text').textContent = 'Créer l\'utilisateur';
-    document.getElementById('save-user-spinner').classList.add('hidden');
-    document.getElementById('btn-save-user').disabled = false;
-  }
+  btnSave.addEventListener('click', async () => {
+    const name     = document.getElementById('new-user-name').value.trim();
+    const email    = document.getElementById('new-user-email').value.trim();
+    const password = document.getElementById('new-user-password').value.trim();
+    const role     = document.getElementById('new-user-role').value;
+    const errEl    = document.getElementById('add-user-error');
+
+    errEl.style.display = 'none';
+    if (!email || !password) { showUserError('Email et mot de passe requis.'); return; }
+    if (password.length < 6)  { showUserError('Mot de passe : 6 caractères minimum.'); return; }
+
+    document.getElementById('save-user-text').textContent = 'Création…';
+    document.getElementById('save-user-spinner').classList.remove('hidden');
+    btnSave.disabled = true;
+
+    try {
+      const res = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, returnSecureToken: false })
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        const msgs = {
+          'EMAIL_EXISTS':          'Cet email est déjà utilisé.',
+          'INVALID_EMAIL':         'Adresse e-mail invalide.',
+          'WEAK_PASSWORD':         'Mot de passe trop faible (min. 6 caractères).',
+          'OPERATION_NOT_ALLOWED': 'La création de comptes est désactivée dans Firebase.',
+        };
+        throw new Error(msgs[data.error?.message] || data.error?.message || 'Erreur création compte.');
+      }
+
+      const uid = data.localId;
+      await setDoc(doc(db, USERS_COL, uid), {
+        email,
+        displayName: name || email.split('@')[0],
+        role,
+        createdAt:   serverTimestamp(),
+        createdBy:   currentUser.email,
+      });
+
+      toast(`Compte créé : ${email}`, 'success');
+      document.getElementById('add-user-form').style.display = 'none';
+      resetUserForm();
+      loadUsers();
+
+    } catch (e) {
+      showUserError(e.message);
+    } finally {
+      document.getElementById('save-user-text').textContent = "Créer l\'utilisateur";
+      document.getElementById('save-user-spinner').classList.add('hidden');
+      btnSave.disabled = false;
+    }
+  });
 }
 
-}
 
 function showUserError(msg) {
   const el = document.getElementById('add-user-error');
