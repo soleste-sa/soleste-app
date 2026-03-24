@@ -270,39 +270,6 @@
           </div>
         </div>
 
-        <!-- Configuration Firebase -->
-        <div class="card settings-section">
-          <div class="settings-section-title">🔥 Configuration Firebase</div>
-          <div class="settings-section-desc">Instructions de configuration initiale</div>
-
-          <div style="margin-bottom:14px;">
-            <p style="font-size:.825rem;line-height:1.7;color:var(--charcoal-lt);">
-              1. Aller sur <a href="https://console.firebase.google.com" target="_blank" style="color:var(--clay);">console.firebase.google.com</a><br>
-              2. Créer un projet <strong>soleste</strong><br>
-              3. Activer <strong>Authentication</strong> › Email/Mot de passe<br>
-              4. Activer <strong>Firestore Database</strong> (mode production)<br>
-              5. Aller dans <strong>Paramètres</strong> › Vos applications › Web<br>
-              6. Copier la config dans <code>js/firebase.js</code>
-            </p>
-          </div>
-
-          <div class="firebase-config-box">
-<span class="punct">// js/firebase.js</span>
-<span class="key">const</span> FIREBASE_CONFIG <span class="punct">= {</span>
-  <span class="key">apiKey</span><span class="punct">:</span>            <span class="val">"VOTRE_API_KEY"</span><span class="punct">,</span>
-  <span class="key">authDomain</span><span class="punct">:</span>        <span class="val">"projet.firebaseapp.com"</span><span class="punct">,</span>
-  <span class="key">projectId</span><span class="punct">:</span>         <span class="val">"VOTRE_PROJECT_ID"</span><span class="punct">,</span>
-  <span class="key">storageBucket</span><span class="punct">:</span>     <span class="val">"projet.appspot.com"</span><span class="punct">,</span>
-  <span class="key">messagingSenderId</span><span class="punct">:</span> <span class="val">"SENDER_ID"</span><span class="punct">,</span>
-  <span class="key">appId</span><span class="punct">:</span>             <span class="val">"APP_ID"</span>
-<span class="punct">};</span></div>
-
-          <div style="margin-top:14px;padding:12px 14px;background:rgba(16,86,91,.06);border-radius:var(--radius);border-left:3px solid var(--forest);">
-            <p style="font-size:.8rem;color:var(--forest-dk);font-weight:500;margin-bottom:6px;">Règles Firestore recommandées</p>
-            <p style="font-size:.78rem;color:var(--charcoal-lt);line-height:1.6;">Accès lecture/écriture pour utilisateurs authentifiés uniquement.</p>
-          </div>
-        </div>
-
         <!-- Infos app -->
         <div class="card">
           <div class="settings-section-title">ℹ️ À propos</div>
