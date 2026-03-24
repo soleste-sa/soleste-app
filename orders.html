@@ -641,8 +641,11 @@ window.setSupplierStatus = async function(orderId, supName, newStatus) {
 window.sendByEmail = function(orderId, supName, supEmail) {
   const order = allOrders.find(o => o.id === orderId);
   if (!order) return;
-  const items = order.bySupplier?.[supName] || [];
-  const date  = new Date().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+  // Récupérer les items (compatibilité ancien/nouveau format)
+  const supData = order.bySupplier?.[supName];
+  const items   = Array.isArray(supData) ? supData : (supData?.items || []);
+  const date    = new Date().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' });
 
   const subject = encodeURIComponent(`Commande SOLESTE — ${date}`);
   const body = encodeURIComponent(
@@ -651,8 +654,12 @@ window.sendByEmail = function(orderId, supName, supEmail) {
     `\n\nCordialement,\nSOLESTE`
   );
 
-  window.open(`mailto:${supEmail}?subject=${subject}&body=${body}`, '_blank');
-  updateOrderStatus(orderId, 'sent');
+  // Utiliser location.href pour éviter le blocage popup navigateur
+  // Ouvrir AVANT l'updateStatus (contexte synchrone = geste utilisateur valide)
+  window.location.href = `mailto:${supEmail}?subject=${subject}&body=${body}`;
+
+  // Mettre à jour le statut après un court délai
+  setTimeout(() => setSupplierStatus(orderId, supName, 'sent'), 500);
 };
 
 function escHtml(str) {
