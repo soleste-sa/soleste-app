@@ -97,6 +97,10 @@
         <input type="text" id="search-input" placeholder="Rechercher un article…">
       </div>
       <button class="filter-btn active" data-cat="ALL">Tous</button>
+      <button class="filter-btn" data-cat="INCOMPLETE" style="border-color:var(--warning);color:var(--warning);" id="filter-incomplete">
+        ⚠ À compléter
+        <span id="incomplete-count" style="background:var(--warning);color:white;border-radius:99px;padding:1px 6px;font-size:.7rem;margin-left:4px;"></span>
+      </button>
       <button class="filter-btn" data-cat="FOOD">Food</button>
       <button class="filter-btn" data-cat="BEVERAGE">Boisson</button>
       <button class="filter-btn" data-cat="CLEANING">Entretien</button>
@@ -361,6 +365,42 @@ function loadArticles() {
 // ── Render Table ─────────────────────────────────────────────
 function renderTable() {
   const searchVal = document.getElementById('search-input').value.trim();
+  // Filtre "À compléter"
+  const activeFilter = document.querySelector('.filter-btn.active')?.dataset.cat;
+  if (activeFilter === 'INCOMPLETE') {
+    const incFiltered = allArticles.filter(a => !a.priceUC || !a.ratio || !a.us);
+    const tbody2 = document.getElementById('articles-body');
+    if (!incFiltered.length) {
+      tbody2.innerHTML = `<tr><td colspan="9" class="table-empty">✅ Tous les articles sont complets !</td></tr>`;
+      return;
+    }
+    // Utiliser incFiltered comme filtered et continuer
+    const incompleteCount2 = incFiltered.length;
+    const incBadge2 = document.getElementById('incomplete-count');
+    if (incBadge2) incBadge2.textContent = incompleteCount2;
+    tbody2.innerHTML = incFiltered.map(a => {
+      const priceUS = (a.ratio && a.priceUC) ? (a.priceUC / a.ratio) : 0;
+      const missing = [!a.priceUC ? 'Prix UC' : '', !a.ratio ? 'Ratio' : '', !a.us ? 'Unité stockage' : ''].filter(Boolean).join(', ');
+      const alertIcon = `<span title="Manquant : ${missing}" style="color:var(--warning);margin-left:4px;cursor:help;">⚠</span>`;
+      return `<tr style="background:rgba(230,126,34,0.06);">
+        <td><strong>${escHtml(a.name)}</strong>${alertIcon}</td>
+        <td>${categoryBadge(a.category)}</td>
+        <td>${escHtml(a.supplier || '—')}</td>
+        <td style="font-size:.82rem;">${escHtml(a.uc || '—')}</td>
+        <td style="font-size:.82rem;color:${!a.us?'var(--warning)':''};">${escHtml(a.us || '⚠ manquant')}</td>
+        <td class="mono" style="color:${!a.priceUC?'var(--warning)':''};">${a.priceUC ? formatCurrency(a.priceUC) : '⚠ manquant'}</td>
+        <td class="mono" style="color:${!a.ratio?'var(--warning)':''};">${a.ratio ? formatCurrency(priceUS, 4) : '⚠ ratio=0'}</td>
+        <td class="mono" style="font-size:.78rem;">${escHtml(a.supplierCode || '—')}</td>
+        <td class="actions">
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="editArticle('${a.id}')" title="Compléter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+    return;
+  }
+
   let filtered = allArticles.filter(a => {
     const matchCat  = currentFilter === 'ALL' || a.category === currentFilter;
     const matchSearch = !searchVal || fuzzyMatch(a.name, searchVal) || fuzzyMatch(a.supplier, searchVal) || fuzzyMatch(a.supplierCode, searchVal);
@@ -383,15 +423,28 @@ function renderTable() {
     return;
   }
 
+  // Compter et afficher le badge "À compléter"
+  const incompleteCount = allArticles.filter(a => !a.priceUC || !a.ratio || !a.us).length;
+  const incBadge = document.getElementById('incomplete-count');
+  if (incBadge) incBadge.textContent = incompleteCount > 0 ? incompleteCount : '';
+  const incBtn = document.getElementById('filter-incomplete');
+  if (incBtn) incBtn.style.display = incompleteCount > 0 ? '' : 'none';
+
   tbody.innerHTML = filtered.map(a => {
-    const priceUS = a.ratio ? (a.priceUC / a.ratio) : 0;
-    return `<tr>
-      <td><strong>${escHtml(a.name)}</strong></td>
+    const priceUS = (a.ratio && a.priceUC) ? (a.priceUC / a.ratio) : 0;
+    const isIncomplete = !a.priceUC || !a.ratio || !a.us;
+    const alertIcon = isIncomplete ? `<span title="${[
+      !a.priceUC ? 'Prix UC manquant' : '',
+      !a.ratio   ? 'Ratio UC/US manquant' : '',
+      !a.us      ? 'Unité de stockage manquante' : ''
+    ].filter(Boolean).join(' · ')}" style="color:var(--warning);margin-left:4px;cursor:help;">⚠</span>` : '';
+    return `<tr style="${isIncomplete ? 'background:rgba(230,126,34,0.04);' : ''}">
+      <td><strong>${escHtml(a.name)}</strong>${alertIcon}</td>
       <td>${categoryBadge(a.category)}</td>
       <td>${escHtml(a.supplier || '—')}</td>
       <td style="font-size:.82rem;">${escHtml(a.uc || '—')}</td>
-      <td style="font-size:.82rem;">${escHtml(a.us || '—')}</td>
-      <td class="mono">${formatCurrency(a.priceUC)}</td>
+      <td style="font-size:.82rem;">${escHtml(a.us || '—') + (!a.us ? ' <span style="color:var(--warning);font-size:.7rem;">⚠</span>' : '')}</td>
+      <td class="mono" style="${!a.priceUC ? 'color:var(--warning);' : ''}">${a.priceUC ? formatCurrency(a.priceUC) : '<span style="color:var(--warning);">— €</span>'}</td>
       <td class="mono" style="font-size:.78rem;">${escHtml(a.supplierCode || '—')}</td>
       <td class="mono" style="font-size:.78rem;">${escHtml(a.barcode || '—')}</td>
       <td class="actions">
