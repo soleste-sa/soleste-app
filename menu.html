@@ -544,7 +544,7 @@ document.getElementById('btn-print-recipe').addEventListener('click', () => {
     { label: 'Prix de vente HTVA', value: fmt(pvHT),    color: FOREST },
     { label: 'Coût matières',      value: fmt(coutMat), color: CHARCOAL },
     { label: `TVA (${tva} %)`,     value: fmt(pvTTC - pvHT), color: CHARCOAL },
-    { label: 'Food cost',          value: fmtPct(foodCost), color: foodCost > 35 ? [192,57,43] : foodCost > 28 ? [230,126,34] : OLIVE },
+    { label: 'Food cost',          value: fmtPct(foodCost), color: (cat||'').toUpperCase().match(/BOIS|BEVERAGE/) ? (foodCost < 20 ? OLIVE : foodCost <= 24 ? [230,126,34] : [192,57,43]) : (foodCost < 30 ? OLIVE : foodCost <= 33 ? [230,126,34] : [192,57,43]) },
     { label: 'Marge brute',        value: fmt(margeBrute), color: margeBrute > 0 ? OLIVE : [192,57,43] },
     { label: `Temps préparation`,  value: prepTime + ' min', color: CHARCOAL },
     { label: 'Coût préparation',   value: fmt(coutPrep), color: CHARCOAL },
@@ -618,11 +618,18 @@ document.getElementById('btn-print-recipe').addEventListener('click', () => {
   const barW = W - ML - MR;
   const fcPct = Math.min(foodCost, 100);
   setFill([220,215,208]); doc.roundedRect(ML, y, barW, 5, 2, 2, 'F');
-  const fcColor = foodCost > 35 ? [192,57,43] : foodCost > 28 ? [230,126,34] : OLIVE;
+  // Seuils selon catégorie : BEVERAGE < 20% excellent, 20-24% bon, > 24% mauvais
+  //                           FOOD     < 30% excellent, 30-33% bon, > 33% mauvais
+  const isBev = (cat||'').toUpperCase().match(/BOIS|BEVERAGE/);
+  const fcColor = isBev
+    ? (foodCost < 20 ? OLIVE : foodCost <= 24 ? [230,126,34] : [192,57,43])
+    : (foodCost < 30 ? OLIVE : foodCost <= 33 ? [230,126,34] : [192,57,43]);
+  const fcLabel = isBev
+    ? (foodCost < 20 ? 'Excellent' : foodCost <= 24 ? 'Bon' : 'Mauvais')
+    : (foodCost < 30 ? 'Excellent' : foodCost <= 33 ? 'Bon' : 'Mauvais');
   setFill(fcColor); doc.roundedRect(ML, y, barW * fcPct / 100, 5, 2, 2, 'F');
   setTxtCol(MUTED); doc.setFont('helvetica', 'normal'); doc.setFontSize(6);
   doc.text('Food cost : ' + fmtPct(foodCost), ML, y + 9);
-  const fcLabel = foodCost <= 28 ? 'Excellent' : foodCost <= 32 ? 'Bon' : foodCost <= 38 ? 'Moyen' : 'Élevé';
   setTxtCol(fcColor); doc.setFont('helvetica', 'bold'); doc.setFontSize(6);
   doc.text(fcLabel, W - MR, y + 9, { align: 'right' });
   y += 18;
