@@ -384,11 +384,15 @@ async function init() {
 
   // Places
   listenPlaces(renderPlaces);
+  // Places (non bloquant)
+  listenPlaces(renderPlaces);
+
   // Utilisateurs
   loadUsers();
   setupUserBindings();
-  // S'assurer que l'admin est enregistré dans app_users
-  await ensureAdminRegistered();
+
+  // Admin enregistré en tâche de fond (non bloquant)
+  ensureAdminRegistered().catch(e => console.warn('ensureAdmin:', e));
 }
 
 async function ensureAdminRegistered() {
