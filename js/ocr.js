@@ -2,7 +2,7 @@
 // SOLESTE — Module OCR via API Claude (Anthropic)
 // ============================================================
 
-const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
+const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 
 // ── Analyse d'une image de bon de livraison ─────────────────
 // input : File (image ou PDF converti en base64)
