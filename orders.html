@@ -433,24 +433,24 @@ async function validateOrder() {
   const ids = Object.keys(cart);
   if (!ids.length) { toast('Le panier est vide', 'warning'); return; }
 
-  // Regrouper par fournisseur
+  // Regrouper par fournisseur avec statut individuel
   const bySupplier = {};
   ids.forEach(id => {
     const art = allArticles.find(a => a.id === id);
     if (!art) return;
     const sup = art.supplier || 'Sans fournisseur';
-    if (!bySupplier[sup]) bySupplier[sup] = [];
-    bySupplier[sup].push({ articleId: id, name: art.name, uc: art.uc||'', qty: cart[id] });
+    if (!bySupplier[sup]) bySupplier[sup] = { items: [], status: 'draft' };
+    bySupplier[sup].items.push({ articleId: id, name: art.name, uc: art.uc||'', qty: cart[id] });
   });
 
   try {
     const orderRef = await addDoc(collection(db, 'orders'), {
       createdAt:  serverTimestamp(),
       createdBy:  currentUser.email,
-      status:     'draft',
+      status:     'draft',  // statut global : draft / partial / complete
       itemCount:  ids.length,
       suppliers:  Object.keys(bySupplier),
-      bySupplier, // { "VANUXEEM": [{articleId, name, uc, qty}], ... }
+      bySupplier, // { "VANUXEEM": { items: [...], status: "draft" }, ... }
     });
     toast(`Commande créée — ${Object.keys(bySupplier).length} fournisseur${Object.keys(bySupplier).length>1?'s':''}`, 'success');
     showHistory();
@@ -476,23 +476,42 @@ function renderHistory() {
     return;
   }
 
-  const statusLabel = { draft: 'Brouillon', sent: 'Envoyée', received: 'Reçue' };
-  const statusClass = { draft: 'status-draft', sent: 'status-sent', received: 'status-received' };
-  const statusBadge = { draft: 'badge-neutral', sent: 'badge-warning', received: 'badge-success' };
-
   list.innerHTML = allOrders.map(o => {
-    const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+    const date = o.createdAt?.toDate
+      ? o.createdAt.toDate().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+      : '—';
     const sups = (o.suppliers||[]).join(', ');
+
+    // Calculer le statut global depuis les statuts par fournisseur
+    const supStatuses = Object.values(o.bySupplier||{}).map(v => Array.isArray(v) ? 'draft' : (v.status||'draft'));
+    const gStatus = supStatuses.length === 0 ? (o.status||'draft')
+      : supStatuses.every(s => s === 'received') ? 'received'
+      : supStatuses.every(s => s === 'draft')    ? 'draft'
+      : 'partial';
+
+    const statusDot   = { draft: 'status-draft', partial: 'status-sent', received: 'status-received' };
+    const statusBadge = { draft: 'badge-neutral', partial: 'badge-warning', received: 'badge-success' };
+    const statusLabel = { draft: 'Brouillon', partial: 'En cours', received: 'Reçue' };
+
+    // Mini-indicateurs par fournisseur
+    const supIcons = Object.entries(o.bySupplier||{}).map(([name, v]) => {
+      const st = Array.isArray(v) ? 'draft' : (v.status||'draft');
+      const col = st === 'received' ? 'var(--success)' : st === 'sent' ? 'var(--warning)' : 'var(--muted)';
+      const icon = st === 'received' ? '📦' : st === 'sent' ? '✉' : '⏳';
+      return `<span title="${name} : ${statusLabel[st]||st}" style="font-size:.7rem;">${icon}</span>`;
+    }).join('');
+
     return `<div class="order-hist-card" onclick="openOrderById('${o.id}')">
-      <div class="status-dot ${statusClass[o.status]||'status-draft'}"></div>
+      <div class="status-dot ${statusDot[gStatus]||'status-draft'}"></div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:600;font-size:.9rem;">${date}</div>
         <div style="font-size:.8rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
           ${o.itemCount||0} article${(o.itemCount||0)>1?'s':''} · ${sups||'—'}
         </div>
+        <div style="margin-top:4px;">${supIcons}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span class="badge ${statusBadge[o.status]||'badge-neutral'}">${statusLabel[o.status]||'Brouillon'}</span>
+        <span class="badge ${statusBadge[gStatus]||'badge-neutral'}">${statusLabel[gStatus]||'Brouillon'}</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--muted);"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
     </div>`;
@@ -506,18 +525,34 @@ window.openOrderById = function(id) {
 
 // ── Modal détail commande ────────────────────────────────────
 function openOrderModal(order) {
-  const statusLabel = { draft: 'Brouillon', sent: 'Envoyée', received: 'Reçue' };
-  const date = order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' }) : 'Aujourd\'hui';
+  const date = order.createdAt?.toDate
+    ? order.createdAt.toDate().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' })
+    : "Aujourd'hui";
+
+  // Calcul du statut global depuis les statuts par fournisseur
+  const supEntries = Object.entries(order.bySupplier || {});
+  const allStatuses = supEntries.map(([, v]) => (typeof v === 'object' && v.status) ? v.status : 'draft');
+  const globalStatus = allStatuses.every(s => s === 'received') ? 'received'
+    : allStatuses.every(s => s === 'draft') ? 'draft' : 'partial';
+  const globalBadge = { draft: 'badge-neutral', partial: 'badge-warning', received: 'badge-success' };
+  const globalLabel = { draft: 'Brouillon', partial: 'En cours', received: 'Reçue complète' };
 
   document.getElementById('modal-order-title').innerHTML =
-    `Commande du ${date} &nbsp;<span class="badge badge-neutral">${statusLabel[order.status]||'Brouillon'}</span>`;
+    `Commande du ${date} &nbsp;<span class="badge ${globalBadge[globalStatus]}">${globalLabel[globalStatus]}</span>`;
 
   const body = document.getElementById('modal-order-body');
-  const byS  = order.bySupplier || {};
 
-  body.innerHTML = Object.entries(byS).map(([supName, items]) => {
-    const sup = allSuppliers.find(s => normalize(s.name) === normalize(supName));
+  body.innerHTML = supEntries.map(([supName, supData]) => {
+    // Compatibilité ancien format (tableau) et nouveau format (objet avec items+status)
+    const items    = Array.isArray(supData) ? supData : (supData.items || []);
+    const supStatus = Array.isArray(supData) ? 'draft' : (supData.status || 'draft');
+
+    const sup      = allSuppliers.find(s => normalize(s.name) === normalize(supName));
     const supEmail = sup?.email || '';
+
+    const statusBadge = { draft: 'badge-neutral', sent: 'badge-warning', received: 'badge-success' };
+    const statusLabel = { draft: 'À envoyer', sent: 'Envoyée', received: 'Reçue' };
+
     const rows = items.map(item => `
       <div class="order-line-row">
         <span>${escHtml(item.name)}</span>
@@ -525,22 +560,33 @@ function openOrderModal(order) {
         <span class="fw-600 mono text-right">${item.qty}</span>
       </div>`).join('');
 
-    return `<div class="supplier-block">
+    // Boutons d'action selon statut du fournisseur
+    let actions = '';
+    if (supStatus === 'draft') {
+      actions = `
+        <button class="btn btn-outline btn-sm" onclick="setSupplierStatus('${order.id}','${escHtml(supName)}','sent')">
+          ✓ Marquer envoyée
+        </button>
+        ${supEmail ? `<button class="btn btn-primary btn-sm" onclick="sendByEmail('${order.id}','${escHtml(supName)}','${escHtml(supEmail)}')">
+          ✉ Envoyer par mail
+        </button>` : ''}`;
+    } else if (supStatus === 'sent') {
+      actions = `
+        <button class="btn btn-primary btn-sm" onclick="setSupplierStatus('${order.id}','${escHtml(supName)}','received')">
+          📦 Marquer reçue
+        </button>`;
+    }
+
+    return `<div class="supplier-block" id="sup-block-${escHtml(supName).replace(/\s/g,'_')}">
       <div class="supplier-block-header">
         <div>
           <div class="supplier-block-name">🏢 ${escHtml(supName)}</div>
-          ${supEmail ? `<div class="text-muted text-sm">✉ ${escHtml(supEmail)}</div>` : '<div class="text-muted text-sm" style="font-style:italic;">Aucun email renseigné dans Fournisseurs</div>'}
+          <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+            <span class="badge ${statusBadge[supStatus]}">${statusLabel[supStatus]}</span>
+            ${supEmail ? `<span class="text-muted text-sm">✉ ${escHtml(supEmail)}</span>` : '<span class="text-muted text-sm" style="font-style:italic;">Aucun email — <a href="suppliers.html" style="color:var(--forest);">Ajouter</a></span>'}
+          </div>
         </div>
-        <div style="display:flex;gap:8px;">
-          ${order.status === 'draft' ? `
-            <button class="btn btn-outline btn-sm" onclick="markSupplierSent('${order.id}', '${escHtml(supName)}')">
-              ✓ Marqué envoyée
-            </button>
-            ${supEmail ? `<button class="btn btn-primary btn-sm" onclick="sendByEmail('${order.id}','${escHtml(supName)}','${escHtml(supEmail)}')">
-              ✉ Envoyer par mail
-            </button>` : ''}
-          ` : ''}
-        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">${actions}</div>
       </div>
       <div class="order-line-row order-line-header">
         <span>Article</span><span>UC</span><span class="text-right">Qté</span>
@@ -549,37 +595,46 @@ function openOrderModal(order) {
     </div>`;
   }).join('');
 
-  // Footer avec actions globales
-  const footer = document.getElementById('modal-order-footer');
-  footer.innerHTML = `
-    <button class="btn btn-secondary" onclick="closeModal('modal-order')">Fermer</button>
-    ${order.status === 'draft' ? `
-      <button class="btn btn-olive" onclick="updateOrderStatus('${order.id}','sent')">
-        ✓ Tout marquer comme envoyé
-      </button>` : ''}
-    ${order.status === 'sent' ? `
-      <button class="btn btn-primary" onclick="updateOrderStatus('${order.id}','received')">
-        📦 Marquer comme reçue
-      </button>` : ''}
-  `;
+  // Footer — fermer seulement
+  document.getElementById('modal-order-footer').innerHTML =
+    `<button class="btn btn-secondary" onclick="closeModal('modal-order')">Fermer</button>`;
 
   openModal('modal-order');
 }
 
-// ── Actions statut ───────────────────────────────────────────
-window.updateOrderStatus = async function(orderId, newStatus) {
-  try {
-    await updateDoc(doc(db, 'orders', orderId), { status: newStatus, updatedAt: serverTimestamp() });
-    const labels = { sent: 'Commande marquée comme envoyée', received: 'Commande marquée comme reçue' };
-    toast(labels[newStatus] || 'Statut mis à jour', 'success');
-    closeModal('modal-order');
-  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
-};
+// ── Actions statut par fournisseur ──────────────────────────
+window.setSupplierStatus = async function(orderId, supName, newStatus) {
+  const order = allOrders.find(o => o.id === orderId);
+  if (!order) return;
 
-window.markSupplierSent = function(orderId, supName) {
-  toast(`Commande ${supName} marquée comme envoyée`, 'success');
-  // On pourrait stocker le statut par fournisseur — pour l'instant on marque la commande globale
-  updateOrderStatus(orderId, 'sent');
+  // Mettre à jour le statut du fournisseur dans bySupplier
+  const byS = JSON.parse(JSON.stringify(order.bySupplier || {}));
+  if (!byS[supName]) return;
+
+  // Compatibilité ancien format
+  if (Array.isArray(byS[supName])) {
+    byS[supName] = { items: byS[supName], status: newStatus };
+  } else {
+    byS[supName].status = newStatus;
+  }
+
+  // Calculer le nouveau statut global
+  const allStatuses = Object.values(byS).map(v => Array.isArray(v) ? 'draft' : (v.status || 'draft'));
+  const globalStatus = allStatuses.every(s => s === 'received') ? 'received'
+    : allStatuses.every(s => s === 'draft') ? 'draft' : 'partial';
+
+  try {
+    await updateDoc(doc(db, 'orders', orderId), {
+      bySupplier: byS,
+      status: globalStatus,
+      updatedAt: serverTimestamp()
+    });
+    const labels = { sent: `${supName} : commande envoyée ✓`, received: `${supName} : commande reçue 📦` };
+    toast(labels[newStatus] || 'Statut mis à jour', 'success');
+    // Rafraîchir le modal
+    const updatedOrder = { ...order, bySupplier: byS, status: globalStatus };
+    openOrderModal(updatedOrder);
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
 // ── Envoi par email ──────────────────────────────────────────
