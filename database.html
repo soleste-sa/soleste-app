@@ -656,8 +656,13 @@ function resetOCR() {
 async function handleOCRFile(file) {
   if (!file) return;
 
-  // Get API key from settings
-  const apiKey = localStorage.getItem('soleste_anthropic_key');
+  // Clé API depuis Firestore (partagée) + fallback localStorage
+  let apiKey = localStorage.getItem('soleste_anthropic_key') || '';
+  try {
+    const { getSettings } = await import('./js/settings.js');
+    const s = await getSettings();
+    if (s.anthropicKey) { apiKey = s.anthropicKey; localStorage.setItem('soleste_anthropic_key', apiKey); }
+  } catch {}
   if (!apiKey) {
     toast('Clé API Anthropic manquante. Configurez-la dans les Réglages.', 'warning');
     return;
@@ -692,9 +697,9 @@ Si une information n'est pas visible, utilise une chaîne vide "" ou 0.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4096,
         messages: [{
           role: 'user',
