@@ -364,25 +364,25 @@ document.getElementById('logout-btn')?.addEventListener('click', async () => {
 
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
-  // Charger réglages
-  const settings = await getSettings();
-  if (settings.hourlyCost) {
-    document.getElementById('hourly-cost').value = settings.hourlyCost;
-    updateCostDisplay(settings.hourlyCost);
-  }
-
-  // Clé API depuis localStorage
+  // Clé API (synchrone, jamais bloquant)
   const apiKey = localStorage.getItem('soleste_anthropic_key') || '';
   if (apiKey) {
     document.getElementById('api-key-input').value = apiKey;
     showApiKeyStatus(true);
   }
 
-  // Places
+  // Places et utilisateurs en premier (temps réel Firestore)
   listenPlaces(renderPlaces);
-  // Utilisateurs
   loadUsers();
   setupUserBindings();
+
+  // Réglages en arrière-plan
+  getSettings().then(settings => {
+    if (settings.hourlyCost) {
+      document.getElementById('hourly-cost').value = settings.hourlyCost;
+      updateCostDisplay(settings.hourlyCost);
+    }
+  }).catch(() => {});
 }
 
 // ── Places ───────────────────────────────────────────────────
