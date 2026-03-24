@@ -211,11 +211,16 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-recipe')">Annuler</button>
       <button class="btn btn-danger btn-sm hidden" id="btn-delete-recipe">Supprimer</button>
+      <button class="btn btn-ghost btn-sm" id="btn-print-recipe" title="Imprimer la fiche recette (PDF A4)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Imprimer PDF
+      </button>
       <button class="btn btn-primary" id="btn-save-recipe">Enregistrer</button>
     </div>
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
 import { auth, db } from './js/firebase.js';
 import {
@@ -468,6 +473,172 @@ document.getElementById('rec-tva').addEventListener('change', updateCosts);
 document.getElementById('rec-preptime').addEventListener('input', updateCosts);
 
 // ── Save Recipe ──────────────────────────────────────────────
+// ── Impression PDF fiche recette ─────────────────────────────
+document.getElementById('btn-print-recipe').addEventListener('click', () => {
+  const name     = document.getElementById('rec-name').value.trim()       || 'Recette sans nom';
+  const cat      = document.getElementById('rec-category').value           || '';
+  const prepTime = document.getElementById('rec-preptime').value            || '0';
+  const pvTTC    = parseFloat(document.getElementById('rec-pvttc').value)  || 0;
+  const tva      = parseFloat(document.getElementById('rec-tva').value)    || 6;
+
+  // Recalcul des chiffres
+  const pvHT      = pvTTC / (1 + tva / 100);
+  const coutMat   = currentIngredients.reduce((s, i) => s + (i.qty||0)*(i.priceUS||0), 0);
+  const foodCost  = pvHT > 0 ? (coutMat / pvHT * 100) : 0;
+  const margeBrute = pvHT - coutMat;
+  const coutPrep  = (parseFloat(prepTime) / 60) * hourlyRate;
+  const margeNette = margeBrute - coutPrep;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const W = 210, H = 297;
+  const ML = 15, MR = 15, MT = 15;
+  let y = MT;
+
+  // Couleurs palette SOLESTE
+  const FOREST  = [16, 86, 91];
+  const CLAY    = [200, 106, 74];
+  const CREAM   = [245, 240, 232];
+  const CHARCOAL= [44, 44, 44];
+  const MUTED   = [138, 138, 138];
+  const WHITE   = [255, 255, 255];
+  const OLIVE   = [108, 125, 54];
+
+  const fc = (arr) => arr.map(v => v/255);
+  const setFill   = (c) => doc.setFillColor(...c);
+  const setDraw   = (c) => doc.setDrawColor(...c);
+  const setTxtCol = (c) => doc.setTextColor(...c);
+  const fmt = (v, d=2) => parseFloat(v||0).toFixed(d).replace('.', ',') + ' €';
+  const fmtPct = (v) => parseFloat(v||0).toFixed(1).replace('.', ',') + ' %';
+
+  // ── Header ─────────────────────────────────────────────────
+  setFill(FOREST); doc.rect(0, 0, W, 28, 'F');
+  setTxtCol(WHITE);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+  doc.text('SOLESTE', ML, 12);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  doc.setTextColor(200, 220, 220);
+  doc.text('Fiche recette — Menu Engineering', ML, 18);
+
+  // Catégorie badge à droite
+  if (cat) {
+    setFill(CLAY); doc.roundedRect(W - MR - 32, 8, 30, 8, 2, 2, 'F');
+    setTxtCol(WHITE); doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+    doc.text(cat.toUpperCase(), W - MR - 17, 13.5, { align: 'center' });
+  }
+  y = 36;
+
+  // ── Nom de la recette ───────────────────────────────────────
+  setTxtCol(FOREST); doc.setFont('helvetica', 'bold'); doc.setFontSize(18);
+  doc.text(name, ML, y); y += 8;
+
+  // Ligne décorative
+  setDraw(CLAY); doc.setLineWidth(0.8);
+  doc.line(ML, y, W - MR, y); y += 6;
+
+  // ── Chiffres clés (2 colonnes) ──────────────────────────────
+  const colW = (W - ML - MR - 8) / 2;
+  const kpiData = [
+    { label: 'Prix de vente TTC',  value: fmt(pvTTC),   color: FOREST },
+    { label: 'Prix de vente HTVA', value: fmt(pvHT),    color: FOREST },
+    { label: 'Coût matières',      value: fmt(coutMat), color: CHARCOAL },
+    { label: `TVA (${tva} %)`,     value: fmt(pvTTC - pvHT), color: CHARCOAL },
+    { label: 'Food cost',          value: fmtPct(foodCost), color: foodCost > 35 ? [192,57,43] : foodCost > 28 ? [230,126,34] : OLIVE },
+    { label: 'Marge brute',        value: fmt(margeBrute), color: margeBrute > 0 ? OLIVE : [192,57,43] },
+    { label: `Temps préparation`,  value: prepTime + ' min', color: CHARCOAL },
+    { label: 'Coût préparation',   value: fmt(coutPrep), color: CHARCOAL },
+    { label: 'Marge nette',        value: fmt(margeNette), color: margeNette > 0 ? OLIVE : [192,57,43] },
+  ];
+
+  // Titre section
+  setTxtCol(MUTED); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('DONNÉES CLÉS', ML, y);
+  y += 4;
+
+  kpiData.forEach((kpi, idx) => {
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    const x = ML + col * (colW + 8);
+    const ky = y + row * 12;
+
+    setFill(col === 0 ? CREAM : [255,255,255]);
+    doc.rect(x, ky - 5, colW, 11, 'F');
+    setDraw([220,215,208]); doc.setLineWidth(0.2);
+    doc.rect(x, ky - 5, colW, 11, 'S');
+
+    setTxtCol(MUTED); doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+    doc.text(kpi.label, x + 3, ky);
+
+    setTxtCol(kpi.color); doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+    doc.text(kpi.value, x + colW - 3, ky + 4, { align: 'right' });
+  });
+
+  y += Math.ceil(kpiData.length / 2) * 12 + 8;
+
+  // ── Ingrédients ─────────────────────────────────────────────
+  setTxtCol(MUTED); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('INGRÉDIENTS', ML, y); y += 4;
+
+  // En-tête tableau
+  setFill(FOREST); doc.rect(ML, y - 4, W - ML - MR, 8, 'F');
+  setTxtCol(WHITE); doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+  doc.text('Article', ML + 3, y);
+  doc.text('Unité', ML + 90, y);
+  doc.text('Quantité', ML + 115, y, { align: 'right' });
+  doc.text('Prix/US', ML + 140, y, { align: 'right' });
+  doc.text('Coût ligne', W - MR - 2, y, { align: 'right' });
+  y += 6;
+
+  currentIngredients.forEach((ing, idx) => {
+    const lineCost = (ing.qty||0) * (ing.priceUS||0);
+    if (idx % 2 === 0) {
+      setFill(CREAM); doc.rect(ML, y - 4, W - ML - MR, 7, 'F');
+    }
+    setTxtCol(CHARCOAL); doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+    doc.text(ing.name || '', ML + 3, y, { maxWidth: 84 });
+    doc.setFontSize(7); setTxtCol(MUTED);
+    doc.text(ing.us || '', ML + 90, y);
+    setTxtCol(CHARCOAL); doc.setFontSize(8);
+    doc.text(String(ing.qty || 0), ML + 115, y, { align: 'right' });
+    doc.text(fmt(ing.priceUS, 4), ML + 140, y, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmt(lineCost), W - MR - 2, y, { align: 'right' });
+    y += 7;
+  });
+
+  // Total ingrédients
+  setFill([235,242,242]); doc.rect(ML, y - 3, W - ML - MR, 8, 'F');
+  setTxtCol(FOREST); doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+  doc.text('TOTAL COÛT MATIÈRES', ML + 3, y + 1);
+  doc.text(fmt(coutMat), W - MR - 2, y + 1, { align: 'right' });
+  y += 12;
+
+  // ── Food cost visuel ─────────────────────────────────────────
+  const barW = W - ML - MR;
+  const fcPct = Math.min(foodCost, 100);
+  setFill([220,215,208]); doc.roundedRect(ML, y, barW, 5, 2, 2, 'F');
+  const fcColor = foodCost > 35 ? [192,57,43] : foodCost > 28 ? [230,126,34] : OLIVE;
+  setFill(fcColor); doc.roundedRect(ML, y, barW * fcPct / 100, 5, 2, 2, 'F');
+  setTxtCol(MUTED); doc.setFont('helvetica', 'normal'); doc.setFontSize(6);
+  doc.text('Food cost : ' + fmtPct(foodCost), ML, y + 9);
+  const fcLabel = foodCost <= 28 ? 'Excellent' : foodCost <= 32 ? 'Bon' : foodCost <= 38 ? 'Moyen' : 'Élevé';
+  setTxtCol(fcColor); doc.setFont('helvetica', 'bold'); doc.setFontSize(6);
+  doc.text(fcLabel, W - MR, y + 9, { align: 'right' });
+  y += 18;
+
+  // ── Footer ───────────────────────────────────────────────────
+  setFill(FOREST); doc.rect(0, H - 12, W, 12, 'F');
+  setTxtCol([180,210,212]); doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+  const today = new Date().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' });
+  doc.text('SOLESTE — Fiche recette générée le ' + today, ML, H - 5);
+  doc.text('Coût horaire : ' + hourlyRate.toFixed(2).replace('.', ',') + ' €/h', W - MR, H - 5, { align: 'right' });
+
+  // Télécharger
+  const safeName = name.replace(/[^a-zA-Z0-9À-ɏ\s]/g, '').trim().replace(/\s+/g, '_');
+  doc.save(`fiche_recette_${safeName}.pdf`);
+});
+
 document.getElementById('btn-save-recipe').addEventListener('click', async () => {
   const name = document.getElementById('rec-name').value.trim();
   if (!name) { toast('Le nom de la recette est obligatoire', 'warning'); return; }
