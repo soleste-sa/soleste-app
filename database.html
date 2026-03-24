@@ -298,8 +298,8 @@
           </div>
           <button class="btn btn-ghost btn-sm" id="ocr-reset-btn">← Nouveau document</button>
         </div>
-        <div style="display:grid;grid-template-columns:32px 2fr 1fr 1fr 1fr 1fr 1fr 80px;gap:8px;padding:8px 0;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);">
-          <span>✓</span><span>Nom article</span><span>Catégorie</span><span>UC</span><span>US</span><span>Prix UC</span><span>Fournisseur</span><span>Statut</span>
+        <div style="display:grid;grid-template-columns:32px 2fr 1fr 1fr 1fr 60px 1fr 1fr 80px;gap:8px;padding:8px 0;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);">
+          <span>✓</span><span>Nom article</span><span>Catégorie</span><span>UC</span><span>US</span><span>Ratio UC/US</span><span>Prix UC</span><span>Fournisseur</span><span>Statut</span>
         </div>
         <div id="ocr-results-container" style="max-height:350px;overflow-y:auto;"></div>
       </div>
@@ -757,7 +757,7 @@ Si une information n'est pas visible : chaîne vide ou 0. Extrais TOUS les artic
     const existingNames = new Set(allArticles.map(a => normalize(a.name)));
     ocrData = items.map((item, i) => {
       const isExisting = existingNames.has(normalize(item.name));
-      return { ...item, _id: i, _supplier: supplier, _status: isExisting ? 'exists' : 'new', _include: !isExisting, _category: 'FOOD', _us: '' };
+      return { ...item, _id: i, _supplier: supplier, _status: isExisting ? 'exists' : 'new', _include: !isExisting, _category: 'FOOD', _us: '', _ratio: 1 };
     });
 
     renderOCRResults(supplier);
@@ -846,7 +846,7 @@ Si une information n'est pas visible : chaîne vide ou 0. Extrais TOUS les artic
     const existingNames = new Set(allArticles.map(a => normalize(a.name)));
     ocrData = items.map((item, i) => {
       const isExisting = existingNames.has(normalize(item.name));
-      return { ...item, _id: i, _supplier: supplier, _status: isExisting ? 'exists' : 'new', _include: !isExisting, _category: 'FOOD', _us: '' };
+      return { ...item, _id: i, _supplier: supplier, _status: isExisting ? 'exists' : 'new', _include: !isExisting, _category: 'FOOD', _us: '', _ratio: 1 };
     });
 
     renderOCRResults(supplier);
@@ -884,6 +884,8 @@ function renderOCRResults(supplier) {
         onchange="updateOCRItem(${item._id}, 'uc', this.value)">
       <input type="text" value="${escHtml(item._us||'')}" placeholder="ex: bouteille" class="form-control" style="font-size:.82rem;padding:5px 8px;"
         onchange="updateOCRItem(${item._id}, '_us', this.value)">
+      <input type="number" value="${item._ratio||1}" placeholder="1" min="0" step="0.01" class="form-control mono" style="font-size:.82rem;padding:5px 8px;" title="Nombre d'unités de stockage par unité de commande"
+        onchange="updateOCRItem(${item._id}, '_ratio', parseFloat(this.value)||1)">
       <input type="number" value="${item.priceUC||''}" placeholder="0.00" class="form-control mono" style="font-size:.82rem;padding:5px 8px;"
         onchange="updateOCRItem(${item._id}, 'priceUC', parseFloat(this.value)||0)">
       <input type="text" value="${escHtml(item._supplier||'')}" placeholder="Fournisseur" class="form-control" style="font-size:.82rem;padding:5px 8px;"
@@ -914,7 +916,7 @@ document.getElementById('btn-confirm-ocr').addEventListener('click', async () =>
         category:     item._category || 'FOOD',
         uc:           item.uc || '',
         us:           item._us || '',
-        ratio:        0,
+        ratio:        item._ratio || 1,
         priceUC:      item.priceUC || 0,
         supplier:     item._supplier || '',
         supplierCode: item.supplierCode || '',
