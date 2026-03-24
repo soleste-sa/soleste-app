@@ -195,7 +195,7 @@
               <input type="password" id="api-key-input" class="form-control" placeholder="sk-ant-…">
               <button class="btn btn-primary" id="btn-save-apikey">Enregistrer</button>
             </div>
-            <p class="form-hint">Stockée localement dans votre navigateur (non synchronisée).<br>
+            <p class="form-hint">Synchronisée pour tous les utilisateurs via Firestore.<br>
               Obtenez votre clé sur <a href="https://console.anthropic.com" target="_blank" style="color:var(--forest);">console.anthropic.com</a></p>
           </div>
           <div id="api-key-status" class="hidden"></div>
@@ -357,12 +357,20 @@ document.getElementById('logout-btn')?.addEventListener('click', async () => {
 
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
-  // Clé API (synchrone, jamais bloquant)
-  const apiKey = localStorage.getItem('soleste_anthropic_key') || '';
-  if (apiKey) {
-    document.getElementById('api-key-input').value = apiKey;
-    showApiKeyStatus(true);
-  }
+  // Clé API depuis Firestore (partagée) + fallback localStorage
+  getSettings().then(s => {
+    const key = s.anthropicKey || localStorage.getItem('soleste_anthropic_key') || '';
+    if (key) {
+      document.getElementById('api-key-input').value = key;
+      showApiKeyStatus(true);
+    }
+  }).catch(() => {
+    const key = localStorage.getItem('soleste_anthropic_key') || '';
+    if (key) {
+      document.getElementById('api-key-input').value = key;
+      showApiKeyStatus(true);
+    }
+  });
 
   // Places et utilisateurs en premier (temps réel Firestore)
   listenPlaces(renderPlaces);
@@ -457,15 +465,24 @@ function updateCostDisplay(cost) {
 }
 
 // ── Clé API ──────────────────────────────────────────────────
-document.getElementById('btn-save-apikey').addEventListener('click', () => {
+document.getElementById('btn-save-apikey').addEventListener('click', async () => {
   const key = document.getElementById('api-key-input').value.trim();
   if (!key.startsWith('sk-ant-')) {
     toast('Clé invalide — doit commencer par sk-ant-', 'error');
     return;
   }
-  localStorage.setItem('soleste_anthropic_key', key);
-  showApiKeyStatus(true);
-  toast('Clé API enregistrée dans ce navigateur', 'success');
+  // Sauvegarder dans Firestore (partagé) ET localStorage (cache local)
+  try {
+    await saveSettings({ anthropicKey: key });
+    localStorage.setItem('soleste_anthropic_key', key);
+    showApiKeyStatus(true);
+    toast('Clé API synchronisée pour tous les utilisateurs ✓', 'success');
+  } catch (e) {
+    // Fallback localStorage uniquement
+    localStorage.setItem('soleste_anthropic_key', key);
+    showApiKeyStatus(true);
+    toast('Clé enregistrée localement (erreur sync)', 'warning');
+  }
 });
 
 function showApiKeyStatus(ok) {

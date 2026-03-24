@@ -41,7 +41,17 @@ Articles déjà connus dans notre base : ${existingNames.slice(0, 20).join(', ')
 
 Indique pour chaque article s'il est "nouveau" ou "existant" dans notre base en ajoutant un champ "status": "new" ou "status": "exists".`;
 
-  const apiKey = localStorage.getItem('soleste_anthropic_key') || '';
+  // Lire la clé depuis Firestore (partagée) avec fallback localStorage
+  let apiKey = localStorage.getItem('soleste_anthropic_key') || '';
+  try {
+    const { getSettings } = await import('./settings.js');
+    const settings = await getSettings();
+    if (settings.anthropicKey) {
+      apiKey = settings.anthropicKey;
+      // Mettre en cache local pour les prochains appels
+      localStorage.setItem('soleste_anthropic_key', apiKey);
+    }
+  } catch {}
   if (!apiKey) throw new Error('Clé API Anthropic non configurée. Allez dans Réglages pour la saisir.');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
