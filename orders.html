@@ -692,6 +692,7 @@ window.sendByEmail = async function(orderId, supName, supEmail) {
         message,
         supplier_name: supName,
         order_date: date,
+        back_email: senderEmail,
       });
 
       // Copie à l'utilisateur connecté
@@ -702,6 +703,7 @@ window.sendByEmail = async function(orderId, supName, supEmail) {
           message:  `Copie de la commande envoyée à ${supName} (${supEmail}) :\n\n${message}`,
           supplier_name: supName,
           order_date: date,
+          back_email: senderEmail,
         });
       }
 
