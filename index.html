@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOLESTE — Connexion</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .login-features { list-style: none; margin-top: 32px; display: flex; flex-direction: column; gap: 14px; position: relative; z-index: 1; }
+    .login-features li { display: flex; align-items: center; gap: 12px; color: rgba(245,240,232,.65); font-size: .88rem; }
+    .login-features li svg { width: 16px; height: 16px; color: var(--clay); flex-shrink: 0; }
+    .forgot-link { font-size: .82rem; color: var(--forest); text-align: right; display: block; margin-top: 8px; cursor: pointer; }
+    .forgot-link:hover { text-decoration: underline; }
+    .version-tag { position: absolute; bottom: 20px; left: 60px; font-size: .72rem; color: rgba(245,240,232,.25); z-index: 1; }
+  </style>
+</head>
+<body>
+<div class="login-page">
+
+  <!-- Gauche — Branding -->
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="wordmark">SOL<span>ESTE</span></div>
+      <div class="tagline">Gestion restauration &amp; hôtellerie</div>
+      <div class="deco"></div>
+      <div class="description">
+        Plateforme intégrée de gestion : base articles, fiches recettes avec food cost, 
+        inventaires avec scan code-barre et OCR pour bons de livraison.
+      </div>
+      <ul class="login-features">
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+          Base articles multi-fournisseurs
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Fiches recettes &amp; food cost automatique
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Inventaires synchronisés en temps réel
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3L14.5 4z"/><circle cx="12" cy="13" r="3"/></svg>
+          Lecture OCR bons de livraison par IA
+        </li>
+      </ul>
+    </div>
+    <div class="version-tag">SOLESTE v1.0 · Soleste SA</div>
+  </div>
+
+  <!-- Droite — Formulaire -->
+  <div class="login-right">
+    <div class="login-box">
+      <h2>Connexion</h2>
+      <p class="sub">Accédez à votre espace de gestion</p>
+
+      <div class="login-error" id="login-error"></div>
+
+      <div class="form-group">
+        <label class="form-label">Adresse e-mail <span class="required">*</span></label>
+        <input type="email" id="login-email" class="form-control" placeholder="prenom@etablissement.be" autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mot de passe <span class="required">*</span></label>
+        <input type="password" id="login-password" class="form-control" placeholder="••••••••" autocomplete="current-password">
+        <span class="forgot-link" id="forgot-link">Mot de passe oublié ?</span>
+      </div>
+
+      <button class="btn btn-primary btn-lg" id="login-btn">
+        <span id="login-btn-text">Se connecter</span>
+        <span id="login-spinner" class="spinner hidden" style="border-color:rgba(255,255,255,.3);border-top-color:white;width:16px;height:16px;border-width:2px;"></span>
+      </button>
+
+      <p style="margin-top:28px;font-size:.78rem;color:var(--muted);text-align:center;">
+        Plateforme réservée aux collaborateurs Soleste SA
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Forgot Password Modal -->
+<div class="modal-backdrop" id="modal-forgot">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Réinitialiser le mot de passe</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-forgot')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:16px;">Entrez votre adresse e-mail pour recevoir un lien de réinitialisation.</p>
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input type="email" id="reset-email" class="form-control" placeholder="prenom@etablissement.be">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-forgot')">Annuler</button>
+      <button class="btn btn-primary" id="reset-btn">Envoyer le lien</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db } from './js/firebase.js';
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { toast, openModal, closeModal, setupModalClose } from './js/utils.js';
+
+window.closeModal = closeModal;
+window.openModal  = openModal;
+
+// Redirect if already logged in
+onAuthStateChanged(auth, user => {
+  if (user) window.location.href = 'dashboard.html';
+});
+
+setupModalClose('modal-forgot');
+
+// Login
+const loginBtn     = document.getElementById('login-btn');
+const loginBtnText = document.getElementById('login-btn-text');
+const loginSpinner = document.getElementById('login-spinner');
+const loginError   = document.getElementById('login-error');
+
+function showError(msg) {
+  loginError.textContent = msg;
+  loginError.classList.add('show');
+}
+function hideError() { loginError.classList.remove('show'); }
+
+loginBtn.addEventListener('click', async () => {
+  hideError();
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showError('Veuillez remplir tous les champs.'); return; }
+
+  loginBtnText.textContent = 'Connexion en cours…';
+  loginSpinner.classList.remove('hidden');
+  loginBtn.disabled = true;
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    window.location.href = 'dashboard.html';
+  } catch (err) {
+    const msgs = {
+      'auth/user-not-found':  'Aucun compte trouvé avec cet e-mail.',
+      'auth/wrong-password':  'Mot de passe incorrect.',
+      'auth/invalid-email':   'Adresse e-mail invalide.',
+      'auth/too-many-requests': 'Trop de tentatives. Réessayez plus tard.',
+      'auth/invalid-credential': 'E-mail ou mot de passe incorrect.',
+    };
+    showError(msgs[err.code] || 'Erreur de connexion. Vérifiez vos identifiants.');
+    loginBtnText.textContent = 'Se connecter';
+    loginSpinner.classList.add('hidden');
+    loginBtn.disabled = false;
+  }
+});
+
+// Enter key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') loginBtn.click();
+});
+
+// Forgot password
+document.getElementById('forgot-link').addEventListener('click', () => {
+  const email = document.getElementById('login-email').value.trim();
+  if (email) document.getElementById('reset-email').value = email;
+  openModal('modal-forgot');
+});
+
+document.getElementById('reset-btn').addEventListener('click', async () => {
+  const email = document.getElementById('reset-email').value.trim();
+  if (!email) { toast('Entrez votre e-mail', 'warning'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    toast('Lien envoyé ! Vérifiez votre boîte mail.', 'success');
+    closeModal('modal-forgot');
+  } catch {
+    toast('Erreur lors de l\'envoi. Vérifiez l\'adresse e-mail.', 'error');
+  }
+});
+</script>
+</body>
+</html>

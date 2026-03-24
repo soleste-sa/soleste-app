@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOLESTE — Menu Engineering</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .recipe-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; }
+    .recipe-card {
+      background:var(--white); border:1px solid var(--border); border-radius:var(--radius-xl);
+      padding:20px; cursor:pointer; transition:var(--transition); position:relative; overflow:hidden;
+    }
+    .recipe-card::before { content:''; position:absolute; top:0;left:0;right:0;height:3px; }
+    .recipe-card.cat-partager::before { background:var(--olive); }
+    .recipe-card.cat-entrees::before  { background:#e8a838; }
+    .recipe-card.cat-plats::before    { background:var(--clay); }
+    .recipe-card.cat-desserts::before { background:#c8649a; }
+    .recipe-card.cat-boissons::before { background:var(--forest); }
+    .recipe-card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+    .recipe-card h4 { font-size:1rem; margin-bottom:6px; color:var(--charcoal); }
+    .recipe-card .meta { font-size:.78rem; color:var(--muted); margin-bottom:14px; display:flex; gap:12px; }
+    .recipe-costs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .cost-pill { background:var(--cream); border-radius:var(--radius); padding:8px 10px; }
+    .cost-pill .cl { font-size:.68rem; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:2px; }
+    .cost-pill .cv { font-family:var(--font-mono); font-size:.92rem; font-weight:600; color:var(--forest-dk); }
+    .cost-pill .cv.warn { color:var(--warning); }
+    .cost-pill .cv.danger { color:var(--danger); }
+    .cost-pill .cv.good { color:var(--success); }
+
+    /* Recipe editor */
+    .ingredient-search-wrap { position:relative; }
+    .ingredient-dropdown {
+      position:absolute; top:100%; left:0; right:0; z-index:50;
+      background:var(--white); border:1.5px solid var(--forest); border-top:none;
+      border-radius:0 0 var(--radius) var(--radius); max-height:200px; overflow-y:auto;
+      box-shadow:var(--shadow);
+    }
+    .ingredient-dropdown-item { padding:8px 14px; font-size:.87rem; cursor:pointer; transition:background var(--transition); }
+    .ingredient-dropdown-item:hover { background:rgba(16,86,91,.07); }
+    .ingredient-dropdown-item .sub { font-size:.73rem; color:var(--muted); }
+    .ing-row { display:grid; grid-template-columns:2.5fr 1fr 1fr 1fr auto; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); }
+    .ing-row:last-child { border-bottom:none; }
+    .ing-row input { padding:6px 10px; border:1.5px solid var(--border-dk); border-radius:var(--radius-sm); font-size:.85rem; outline:none; transition:var(--transition); text-align:right; }
+    .ing-row input:focus { border-color:var(--forest); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <header class="app-header">
+    <div class="logo">SOL<span>ESTE</span></div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">–</div>
+        <span id="user-name">–</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </header>
+
+  <nav class="app-sidebar">
+    <div class="nav-section">Navigation</div>
+    <a href="dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Tableau de bord
+    </a>
+    <div class="nav-section">Modules</div>
+    <a href="database.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Base articles
+    </a>
+    <a href="menu.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Menu engineering
+    </a>
+    <a href="inventory.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Inventaire
+    </a>
+    <div class="nav-section">Configuration</div>
+    <a href="settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Réglages
+    </a>
+  </nav>
+
+  <main class="app-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Menu engineering</div>
+        <div class="page-subtitle">Fiches recettes, food cost et marges</div>
+      </div>
+      <button class="btn btn-primary" id="btn-new-recipe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nouvelle fiche recette
+      </button>
+    </div>
+
+    <!-- Filter & Search -->
+    <div class="toolbar">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="recipe-search" placeholder="Rechercher une recette…">
+      </div>
+      <button class="filter-btn active" data-rcat="ALL" style="border-radius:99px;padding:5px 14px;font-size:.78rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border-dk);background:var(--white);color:var(--charcoal-lt);transition:var(--transition);">Toutes</button>
+      <button class="filter-btn" data-rcat="À partager">À partager</button>
+      <button class="filter-btn" data-rcat="Entrées">Entrées</button>
+      <button class="filter-btn" data-rcat="Plats">Plats</button>
+      <button class="filter-btn" data-rcat="Desserts">Desserts</button>
+      <button class="filter-btn" data-rcat="Boissons">Boissons</button>
+    </div>
+
+    <div class="recipe-grid" id="recipe-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);">
+        <div class="spinner" style="margin:0 auto 12px;"></div>Chargement…
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ══ Modal : Recipe Editor ══════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-recipe">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-recipe-title">Nouvelle fiche recette</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-recipe')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:20px 24px;">
+
+      <!-- Header fields -->
+      <div class="form-row" style="margin-bottom:16px;">
+        <div class="form-group" style="flex:2;">
+          <label class="form-label">Nom de la recette <span class="required">*</span></label>
+          <input type="text" id="rec-name" class="form-control" placeholder="ex: Risotto aux champignons">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catégorie</label>
+          <select id="rec-category" class="form-control">
+            <option>À partager</option>
+            <option>Entrées</option>
+            <option selected>Plats</option>
+            <option>Desserts</option>
+            <option>Boissons</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label class="form-label">Temps de préparation (min)</label>
+          <input type="number" id="rec-preptime" class="form-control" min="0" placeholder="ex: 30">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prix de vente TVAC (€) <span class="required">*</span></label>
+          <input type="number" id="rec-pvttc" class="form-control" step="0.01" min="0" placeholder="ex: 22.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Taux TVA</label>
+          <select id="rec-tva" class="form-control">
+            <option value="6">6 %</option>
+            <option value="12">12 %</option>
+            <option value="21">21 %</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Ingredients section -->
+      <div class="card-header" style="margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+        <span class="card-title" style="font-size:1rem;">Ingrédients</span>
+        <button class="btn btn-ghost btn-sm" id="btn-add-ingredient">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Ajouter
+        </button>
+      </div>
+
+      <!-- Ingredient search -->
+      <div class="ingredient-search-wrap" style="margin-bottom:14px;">
+        <input type="text" id="ingredient-search" class="form-control" placeholder="🔍 Rechercher un article de la base…">
+        <div class="ingredient-dropdown hidden" id="ingredient-dropdown"></div>
+      </div>
+
+      <!-- Ingredient header -->
+      <div style="display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr auto;gap:10px;padding:6px 0;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:2px solid var(--border-dk);margin-bottom:4px;">
+        <span>Article</span><span style="text-align:right;">Qté (US)</span><span style="text-align:right;">Prix/US</span><span style="text-align:right;">Coût</span><span></span>
+      </div>
+      <div id="ingredients-list"></div>
+
+      <!-- Méthode -->
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Méthode de préparation</label>
+        <textarea id="rec-method" class="form-control" rows="3" placeholder="Description de la préparation, cuisson, dressage…"></textarea>
+      </div>
+
+      <!-- Cost Summary -->
+      <div class="cost-summary" id="cost-summary" style="margin-top:20px;">
+        <div class="cost-item"><div class="label">Coût matières HTVA</div><div class="value" id="cs-cost">0,00 €</div></div>
+        <div class="cost-item"><div class="label">Prix vente HTVA</div><div class="value" id="cs-pvht">0,00 €</div></div>
+        <div class="cost-item"><div class="label">Food cost</div><div class="value highlight" id="cs-fc">0,0 %</div></div>
+        <div class="cost-item"><div class="label">Marge brute</div><div class="value" id="cs-mb">0,00 €</div></div>
+        <div class="cost-item"><div class="label">Coût préparation</div><div class="value" id="cs-cp">0,00 €</div></div>
+        <div class="cost-item"><div class="label">Marge nette</div><div class="value" id="cs-mn">0,00 €</div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-recipe')">Annuler</button>
+      <button class="btn btn-danger btn-sm hidden" id="btn-delete-recipe">Supprimer</button>
+      <button class="btn btn-primary" id="btn-save-recipe">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { auth, db } from './js/firebase.js';
+import {
+  collection, doc, addDoc, updateDoc, deleteDoc, getDocs,
+  onSnapshot, serverTimestamp, query, orderBy, addDoc as aDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { toast, normalize, fuzzyMatch, formatCurrency, formatPercent, openModal, closeModal, setupModalClose, debounce } from './js/utils.js';
+
+window.closeModal = closeModal;
+window.openModal  = openModal;
+
+let currentUser = null;
+let allRecipes  = [];
+let allArticles = [];
+let currentIngredients = [];
+let editingRecipeId = null;
+let currentCatFilter = 'ALL';
+let hourlyRate = 0;
+
+const CAT_SLUGS = { 'À partager':'partager', 'Entrées':'entrees', 'Plats':'plats', 'Desserts':'desserts', 'Boissons':'boissons' };
+
+// ── Auth ─────────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-avatar').textContent = name.slice(0,2).toUpperCase();
+
+  // Load settings (hourly rate)
+  const settSnap = await getDocs(collection(db, 'settings'));
+  settSnap.forEach(d => { if (d.id === 'general') hourlyRate = d.data().hourlyRate || 0; });
+
+  // Load articles
+  const artSnap = await getDocs(collection(db, 'articles'));
+  allArticles = artSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  // Load recipes realtime
+  const q = query(collection(db, 'recipes'), orderBy('name'));
+  onSnapshot(q, snap => {
+    allRecipes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderGrid();
+  });
+});
+document.getElementById('logout-btn').addEventListener('click', async () => { await signOut(auth); window.location.href = 'index.html'; });
+
+// ── Render Grid ──────────────────────────────────────────────
+function renderGrid() {
+  const search = document.getElementById('recipe-search').value.trim();
+  let filtered = allRecipes.filter(r => {
+    const matchCat = currentCatFilter === 'ALL' || r.category === currentCatFilter;
+    const matchSrch = !search || fuzzyMatch(r.name, search);
+    return matchCat && matchSrch;
+  });
+
+  const grid = document.getElementById('recipe-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);">Aucune recette trouvée</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(r => {
+    const fc = r.foodCost || 0;
+    const fcClass = fc > 35 ? 'danger' : fc > 28 ? 'warn' : 'good';
+    const slug = CAT_SLUGS[r.category] || 'plats';
+    return `<div class="recipe-card cat-${slug}" onclick="openRecipeEdit('${r.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span class="badge" style="background:rgba(16,86,91,.1);color:var(--forest);font-size:.7rem;">${escHtml(r.category)}</span>
+        <span style="font-size:.75rem;color:var(--muted);">${r.prepTime ? r.prepTime + ' min' : ''}</span>
+      </div>
+      <h4>${escHtml(r.name)}</h4>
+      <div class="meta">
+        <span>${(r.ingredients||[]).length} ingrédient${(r.ingredients||[]).length>1?'s':''}</span>
+        <span>PV ${formatCurrency(r.pvTTC)}</span>
+      </div>
+      <div class="recipe-costs">
+        <div class="cost-pill"><div class="cl">Coût matières</div><div class="cv">${formatCurrency(r.costTotal)}</div></div>
+        <div class="cost-pill"><div class="cl">Food cost</div><div class="cv ${fcClass}">${formatPercent(fc)}</div></div>
+        <div class="cost-pill"><div class="cl">Marge brute</div><div class="cv">${formatCurrency(r.grossMargin)}</div></div>
+        <div class="cost-pill"><div class="cl">Marge nette</div><div class="cv">${formatCurrency(r.netMargin)}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+window.openRecipeEdit = openRecipeEdit;
+
+// Filters
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCatFilter = btn.dataset.rcat;
+    renderGrid();
+  });
+});
+document.getElementById('recipe-search').addEventListener('input', debounce(renderGrid, 200));
+
+// ── Recipe Modal ─────────────────────────────────────────────
+function openRecipeNew() {
+  editingRecipeId = null;
+  currentIngredients = [];
+  document.getElementById('modal-recipe-title').textContent = 'Nouvelle fiche recette';
+  document.getElementById('rec-name').value = '';
+  document.getElementById('rec-category').value = 'Plats';
+  document.getElementById('rec-preptime').value = '';
+  document.getElementById('rec-pvttc').value = '';
+  document.getElementById('rec-tva').value = '6';
+  document.getElementById('rec-method').value = '';
+  document.getElementById('btn-delete-recipe').classList.add('hidden');
+  renderIngredients();
+  updateCosts();
+  openModal('modal-recipe');
+}
+
+function openRecipeEdit(id) {
+  const r = allRecipes.find(x => x.id === id);
+  if (!r) return;
+  editingRecipeId = id;
+  currentIngredients = JSON.parse(JSON.stringify(r.ingredients || []));
+  document.getElementById('modal-recipe-title').textContent = 'Modifier la recette';
+  document.getElementById('rec-name').value = r.name || '';
+  document.getElementById('rec-category').value = r.category || 'Plats';
+  document.getElementById('rec-preptime').value = r.prepTime || '';
+  document.getElementById('rec-pvttc').value = r.pvTTC || '';
+  document.getElementById('rec-tva').value = String(r.tva || 6);
+  document.getElementById('rec-method').value = r.method || '';
+  document.getElementById('btn-delete-recipe').classList.remove('hidden');
+  renderIngredients();
+  updateCosts();
+  openModal('modal-recipe');
+}
+
+document.getElementById('btn-new-recipe').addEventListener('click', openRecipeNew);
+setupModalClose('modal-recipe');
+
+// ── Ingredient Search ─────────────────────────────────────────
+const ingredientSearch = document.getElementById('ingredient-search');
+const ingredientDropdown = document.getElementById('ingredient-dropdown');
+
+ingredientSearch.addEventListener('input', debounce(() => {
+  const q = ingredientSearch.value.trim();
+  if (q.length < 1) { ingredientDropdown.classList.add('hidden'); return; }
+  const matches = allArticles.filter(a => fuzzyMatch(a.name, q) || fuzzyMatch(a.supplier, q)).slice(0, 8);
+  if (!matches.length) { ingredientDropdown.classList.add('hidden'); return; }
+  ingredientDropdown.innerHTML = matches.map(a => {
+    const priceUS = a.ratio > 0 ? (a.priceUC / a.ratio) : 0;
+    return `<div class="ingredient-dropdown-item" onclick="addIngredient('${a.id}')">
+      <strong>${escHtml(a.name)}</strong>
+      <div class="sub">${escHtml(a.us || '—')} · ${formatCurrency(priceUS, 4)}/US</div>
+    </div>`;
+  }).join('');
+  ingredientDropdown.classList.remove('hidden');
+}, 150));
+
+document.addEventListener('click', e => {
+  if (!ingredientSearch.contains(e.target) && !ingredientDropdown.contains(e.target))
+    ingredientDropdown.classList.add('hidden');
+});
+
+window.addIngredient = function(articleId) {
+  const art = allArticles.find(a => a.id === articleId);
+  if (!art) return;
+  // Don't add duplicate
+  if (currentIngredients.find(i => i.articleId === articleId)) {
+    toast('Cet article est déjà dans la recette', 'warning');
+    ingredientDropdown.classList.add('hidden');
+    ingredientSearch.value = '';
+    return;
+  }
+  const priceUS = art.ratio > 0 ? art.priceUC / art.ratio : 0;
+  currentIngredients.push({
+    articleId,
+    name: art.name,
+    us: art.us || '',
+    priceUS,
+    qty: 0
+  });
+  renderIngredients();
+  updateCosts();
+  ingredientDropdown.classList.add('hidden');
+  ingredientSearch.value = '';
+};
+
+document.getElementById('btn-add-ingredient').addEventListener('click', () => ingredientSearch.focus());
+
+// ── Render Ingredients ───────────────────────────────────────
+function renderIngredients() {
+  const list = document.getElementById('ingredients-list');
+  if (!currentIngredients.length) {
+    list.innerHTML = `<div style="padding:16px 0;text-align:center;color:var(--muted);font-size:.85rem;">Aucun ingrédient — recherchez un article ci-dessus</div>`;
+    return;
+  }
+  list.innerHTML = currentIngredients.map((ing, i) => {
+    const lineCost = (ing.qty || 0) * (ing.priceUS || 0);
+    return `<div class="ing-row">
+      <span style="font-size:.88rem;">${escHtml(ing.name)} <small style="color:var(--muted);">(${escHtml(ing.us)})</small></span>
+      <input type="number" value="${ing.qty || ''}" min="0" step="0.001" placeholder="0"
+        onchange="updateIngQty(${i}, this.value)" oninput="updateIngQty(${i}, this.value)">
+      <span class="mono text-right" style="font-size:.82rem;">${formatCurrency(ing.priceUS, 4)}</span>
+      <span class="mono text-right" style="font-size:.88rem;" id="ing-cost-${i}">${formatCurrency(lineCost)}</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="removeIngredient(${i})" style="color:var(--danger);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+window.updateIngQty = function(i, val) {
+  currentIngredients[i].qty = parseFloat(val) || 0;
+  const lineCost = currentIngredients[i].qty * (currentIngredients[i].priceUS || 0);
+  const el = document.getElementById(`ing-cost-${i}`);
+  if (el) el.textContent = formatCurrency(lineCost);
+  updateCosts();
+};
+
+window.removeIngredient = function(i) {
+  currentIngredients.splice(i, 1);
+  renderIngredients();
+  updateCosts();
+};
+
+// ── Cost Calculator ──────────────────────────────────────────
+function updateCosts() {
+  const pvTTC  = parseFloat(document.getElementById('rec-pvttc').value) || 0;
+  const tva    = parseFloat(document.getElementById('rec-tva').value) || 6;
+  const prepTime = parseFloat(document.getElementById('rec-preptime').value) || 0;
+
+  const costTotal = currentIngredients.reduce((s, i) => s + (i.qty || 0) * (i.priceUS || 0), 0);
+  const pvHTVA    = pvTTC / (1 + tva / 100);
+  const foodCost  = pvHTVA > 0 ? (costTotal / pvHTVA) * 100 : 0;
+  const grossMargin = pvHTVA - costTotal;
+  const prepCost  = (prepTime / 60) * hourlyRate;
+  const netMargin = grossMargin - prepCost;
+
+  document.getElementById('cs-cost').textContent = formatCurrency(costTotal);
+  document.getElementById('cs-pvht').textContent  = formatCurrency(pvHTVA);
+  document.getElementById('cs-fc').textContent    = formatPercent(foodCost);
+  document.getElementById('cs-mb').textContent    = formatCurrency(grossMargin);
+  document.getElementById('cs-cp').textContent    = formatCurrency(prepCost);
+  document.getElementById('cs-mn').textContent    = formatCurrency(netMargin);
+}
+
+document.getElementById('rec-pvttc').addEventListener('input', updateCosts);
+document.getElementById('rec-tva').addEventListener('change', updateCosts);
+document.getElementById('rec-preptime').addEventListener('input', updateCosts);
+
+// ── Save Recipe ──────────────────────────────────────────────
+document.getElementById('btn-save-recipe').addEventListener('click', async () => {
+  const name = document.getElementById('rec-name').value.trim();
+  if (!name) { toast('Le nom de la recette est obligatoire', 'warning'); return; }
+
+  const pvTTC    = parseFloat(document.getElementById('rec-pvttc').value) || 0;
+  const tva      = parseFloat(document.getElementById('rec-tva').value) || 6;
+  const prepTime = parseFloat(document.getElementById('rec-preptime').value) || 0;
+  const costTotal= currentIngredients.reduce((s, i) => s + (i.qty||0)*(i.priceUS||0), 0);
+  const pvHTVA   = pvTTC / (1 + tva / 100);
+  const foodCost = pvHTVA > 0 ? (costTotal / pvHTVA) * 100 : 0;
+  const grossMargin = pvHTVA - costTotal;
+  const prepCost = (prepTime / 60) * hourlyRate;
+  const netMargin = grossMargin - prepCost;
+
+  const data = {
+    name,
+    category:    document.getElementById('rec-category').value,
+    prepTime,
+    pvTTC,
+    tva,
+    method:      document.getElementById('rec-method').value.trim(),
+    ingredients: currentIngredients,
+    costTotal,
+    pvHTVA,
+    foodCost,
+    grossMargin,
+    prepCost,
+    netMargin,
+    updatedAt:   serverTimestamp(),
+    updatedBy:   currentUser.email,
+  };
+
+  try {
+    if (editingRecipeId) {
+      await updateDoc(doc(db, 'recipes', editingRecipeId), data);
+      toast('Fiche recette mise à jour', 'success');
+    } else {
+      data.createdAt = serverTimestamp();
+      await addDoc(collection(db, 'recipes'), data);
+      toast('Fiche recette créée', 'success');
+    }
+    closeModal('modal-recipe');
+  } catch (e) {
+    toast('Erreur lors de l\'enregistrement', 'error');
+    console.error(e);
+  }
+});
+
+document.getElementById('btn-delete-recipe').addEventListener('click', async () => {
+  if (!editingRecipeId || !confirm('Supprimer cette fiche recette ?')) return;
+  try {
+    await deleteDoc(doc(db, 'recipes', editingRecipeId));
+    toast('Recette supprimée', 'success');
+    closeModal('modal-recipe');
+  } catch { toast('Erreur suppression', 'error'); }
+});
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

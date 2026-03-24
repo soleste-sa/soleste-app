@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOLESTE — Inventaire</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ── Scan Zone ── */
+    .scan-panel {
+      background: var(--charcoal);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      color: var(--cream);
+      margin-bottom: 24px;
+    }
+    .scan-panel h3 { font-family: var(--font-display); font-size: 1.2rem; color: var(--cream); margin-bottom: 16px; }
+    .scan-video-wrap {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: #000;
+      max-width: 100%;
+      aspect-ratio: 16/9;
+      margin-bottom: 16px;
+    }
+    #scan-video { width: 100%; height: 100%; object-fit: cover; }
+    .scan-aim {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .scan-aim-box {
+      width: 220px;
+      height: 100px;
+      border: 2px solid var(--clay);
+      border-radius: 6px;
+      box-shadow: 0 0 0 2000px rgba(0,0,0,0.4);
+    }
+    .scan-status {
+      text-align: center;
+      font-size: .85rem;
+      color: rgba(245,240,232,.5);
+      margin-bottom: 16px;
+    }
+    .scan-status.found { color: var(--olive-lt); font-weight: 600; }
+    .scan-manual-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .scan-manual-row input {
+      padding: 10px 14px;
+      border: 1.5px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.08);
+      color: var(--cream);
+      border-radius: var(--radius);
+      font-size: .9rem;
+    }
+    .scan-manual-row input::placeholder { color: rgba(245,240,232,.35); }
+    .scan-manual-row input:focus { border-color: var(--clay); outline: none; }
+
+    /* ── Lines table ── */
+    .qty-input {
+      width: 80px;
+      padding: 4px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: .875rem;
+      text-align: right;
+    }
+    .qty-input:focus { border-color: var(--forest); outline: none; box-shadow: 0 0 0 2px rgba(16,86,91,.1); }
+
+    .inventory-header {
+      background: linear-gradient(135deg, var(--forest-dk) 0%, var(--forest) 100%);
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      color: var(--cream);
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .inventory-header h2 { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 4px; }
+    .inventory-header p  { font-size: .82rem; color: rgba(245,240,232,.55); }
+    .inventory-badge {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .badge-draft     { background: rgba(230,126,34,.2); color: #f39c12; }
+    .badge-confirmed { background: rgba(39,174,96,.2);  color: var(--success); }
+
+    .place-section-header {
+      background: var(--cream-dk);
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: .8rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--forest);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .value-total {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--forest);
+    }
+
+    /* ── History ── */
+    .hist-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .hist-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+    .hist-icon {
+      width: 42px; height: 42px;
+      border-radius: var(--radius);
+      background: rgba(16,86,91,.1);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .hist-icon svg { color: var(--forest); }
+
+    /* ── Search highlight ── */
+    .search-highlight { background: rgba(200,106,74,.25); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="logo">SOL<span>ESTE</span></div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">–</div>
+        <span id="user-name">–</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <nav class="app-sidebar">
+    <div class="nav-section">Navigation</div>
+    <a href="dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Tableau de bord
+    </a>
+    <div class="nav-section">Modules</div>
+    <a href="database.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Base articles
+    </a>
+    <a href="menu.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Menu engineering
+    </a>
+    <a href="inventory.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Inventaire
+    </a>
+    <div class="nav-section">Configuration</div>
+    <a href="settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Réglages
+    </a>
+  </nav>
+
+  <!-- Main -->
+  <main class="app-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Inventaire</div>
+        <div class="page-subtitle">Saisie par scan ou manuelle · Synchronisation temps réel</div>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-secondary" id="btn-history">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 101.41-5.5L1 10"/></svg>
+          Historique
+        </button>
+        <button class="btn btn-primary" id="btn-new-inventory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nouvel inventaire
+        </button>
+      </div>
+    </div>
+
+    <!-- État vide / pas d'inventaire en cours -->
+    <div id="view-empty">
+      <div class="empty-state" style="margin-top: 60px;">
+        <div class="empty-state-icon">📋</div>
+        <h3>Aucun inventaire en cours</h3>
+        <p>Créez un nouvel inventaire pour commencer la saisie par scan ou manuellement.</p>
+        <button class="btn btn-primary mt-16" id="btn-new-inventory-2">
+          Créer un inventaire
+        </button>
+      </div>
+    </div>
+
+    <!-- Inventaire actif -->
+    <div id="view-active" class="hidden">
+
+      <!-- Header inventaire -->
+      <div class="inventory-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+            <h2 id="inv-title">Inventaire du —</h2>
+            <span class="inventory-badge badge-draft" id="inv-status-badge">En cours</span>
+          </div>
+          <p id="inv-meta">Par — · Places : —</p>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+          <div style="text-align:right;">
+            <div class="label">Valeur totale</div>
+            <div class="value-total" id="inv-total-value">0,00 €</div>
+          </div>
+          <div class="flex gap-8">
+            <button class="btn btn-secondary btn-sm" id="btn-export-inv">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Exporter
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-confirm-inv">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+              Confirmer
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone de scan -->
+      <div id="scan-section" class="scan-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <h3>📷 Scanner un code-barre</h3>
+          <button class="btn btn-ghost btn-sm" id="btn-toggle-scan" style="color:rgba(245,240,232,.6);">
+            Masquer
+          </button>
+        </div>
+
+        <div class="scan-video-wrap" id="scan-video-wrap">
+          <video id="scan-video" autoplay muted playsinline></video>
+          <div class="scan-aim">
+            <div class="scan-aim-box"></div>
+          </div>
+        </div>
+
+        <div class="scan-status" id="scan-status">Pointez la caméra vers un code-barre…</div>
+
+        <!-- Saisie manuelle code-barre / recherche -->
+        <div class="scan-manual-row">
+          <div>
+            <label style="font-size:.75rem;color:rgba(245,240,232,.5);display:block;margin-bottom:6px;">Recherche article ou code-barre</label>
+            <input type="text" id="scan-search" placeholder="Nom, code-barre ou référence…" autocomplete="off">
+          </div>
+          <button class="btn btn-clay btn-sm" id="btn-manual-add">Ajouter</button>
+        </div>
+
+        <!-- Résultats de recherche -->
+        <div id="scan-results" class="hidden" style="background:rgba(255,255,255,.06);border-radius:var(--radius);margin-top:10px;max-height:200px;overflow-y:auto;"></div>
+
+        <!-- Sélection place + quantité pour ajout manuel -->
+        <div id="scan-add-row" class="hidden" style="margin-top:12px;display:grid;grid-template-columns:1fr 120px auto auto;gap:10px;align-items:end;">
+          <div>
+            <label style="font-size:.75rem;color:rgba(245,240,232,.5);display:block;margin-bottom:6px;">Article sélectionné</label>
+            <div id="scan-selected-article" style="font-size:.875rem;color:var(--cream);background:rgba(255,255,255,.06);padding:8px 12px;border-radius:var(--radius-sm);">—</div>
+          </div>
+          <div>
+            <label style="font-size:.75rem;color:rgba(245,240,232,.5);display:block;margin-bottom:6px;">Lieu</label>
+            <select id="scan-place-select" style="padding:8px 10px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:var(--cream);border-radius:var(--radius-sm);font-size:.85rem;width:100%;">
+              <option value="">Aucun</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.75rem;color:rgba(245,240,232,.5);display:block;margin-bottom:6px;">Qté</label>
+            <input type="number" id="scan-qty" value="1" min="0" step="0.1" style="width:70px;padding:8px 10px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:var(--cream);border-radius:var(--radius-sm);font-size:.9rem;text-align:center;">
+          </div>
+          <button class="btn btn-olive btn-sm" id="btn-confirm-add" style="margin-top:20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+            OK
+          </button>
+        </div>
+      </div>
+
+      <!-- Tableau des lignes -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Lignes d'inventaire</div>
+          <div class="flex gap-8">
+            <div class="search-bar" style="min-width:220px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="lines-search" placeholder="Filtrer les lignes…">
+            </div>
+          </div>
+        </div>
+
+        <div id="lines-container">
+          <div class="empty-state" style="padding:40px;">
+            <div class="empty-state-icon">📦</div>
+            <p>Aucun article scanné. Commencez par scanner ou rechercher un article.</p>
+          </div>
+        </div>
+
+        <div style="padding:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <span id="lines-count" class="text-muted text-sm">0 lignes</span>
+          <div style="font-weight:600;color:var(--forest);">
+            Total : <span id="lines-total">0,00 €</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Modal : Nouvel inventaire -->
+<div class="modal-backdrop" id="modal-new-inv">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nouvel inventaire</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-new-inv')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Date de l'inventaire</label>
+        <input type="date" id="inv-date" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emplacements à inventorier</label>
+        <div id="places-checklist" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div>
+        <p class="form-hint">Laissez vide pour inventaire global.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-new-inv')">Annuler</button>
+      <button class="btn btn-primary" id="btn-create-inv">Créer l'inventaire</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : Historique -->
+<div class="modal-backdrop" id="modal-history">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Historique des inventaires</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-history')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="history-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal : Ajout quantité via scan (article trouvé) -->
+<div class="modal-backdrop" id="modal-scan-found">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="modal-title">Article trouvé</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-scan-found')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="scan-found-info" style="background:var(--cream);border-radius:var(--radius);padding:14px;margin-bottom:16px;font-size:.875rem;"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Lieu</label>
+          <select id="scan-found-place" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantité à ajouter</label>
+          <input type="number" id="scan-found-qty" class="form-control" value="1" min="0" step="0.1">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-scan-found')">Annuler</button>
+      <button class="btn btn-primary" id="btn-scan-confirm">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ZXing barcode scanner -->
+<script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+
+<script type="module">
+import { auth, db } from './js/firebase.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, formatCurrency, formatDate, formatDateTime, showLoading, hideLoading } from './js/utils.js';
+import {
+  getPlaces, listenPlaces,
+  createInventory, confirmInventory, deleteInventory, getAllInventories,
+  getInventoryLines, listenInventoryLines,
+  addQuantity, setQuantity, deleteLine,
+  calcInventoryValue, groupByPlace, clearDraftCache
+} from './js/inventory.js';
+import { getAllArticles } from './js/database.js';
+import { getSettings } from './js/settings.js';
+
+window.closeModal = closeModal;
+window.openModal  = openModal;
+
+// ── État global ─────────────────────────────────────────────
+let currentUser    = null;
+let currentInvId   = null;
+let currentInvData = null;
+let allArticles    = [];
+let allPlaces      = [];
+let invLines       = [];
+let unsubLines     = null;
+let scannerActive  = false;
+let selectedArticle = null;
+
+// ── Auth guard ───────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  const avatar = document.getElementById('user-avatar');
+  const name   = document.getElementById('user-name');
+  const displayName = user.displayName || user.email.split('@')[0];
+  if (avatar) avatar.textContent = displayName.substring(0,2).toUpperCase();
+  if (name)   name.textContent   = displayName;
+
+  await init();
+});
+
+document.getElementById('logout-btn')?.addEventListener('click', async () => {
+  const { signOut } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+  await signOut(auth);
+  window.location.href = 'index.html';
+});
+
+// ── Init ─────────────────────────────────────────────────────
+async function init() {
+  showLoading('Chargement…');
+  try {
+    [allArticles, allPlaces] = await Promise.all([getAllArticles(), getPlaces()]);
+    listenPlaces(places => { allPlaces = places; renderPlaceSelects(); });
+
+    // Vérifier s'il y a un draft en cours
+    const invs = await getAllInventories();
+    const draft = invs.find(i => i.status === 'draft');
+    if (draft) {
+      await loadInventory(draft);
+    } else {
+      showEmpty();
+    }
+
+    setupModals();
+    setupScan();
+    setupSearch();
+    setupModalClose('modal-new-inv');
+    setupModalClose('modal-history');
+    setupModalClose('modal-scan-found');
+  } catch (e) {
+    toast('Erreur de chargement : ' + e.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function showEmpty() {
+  document.getElementById('view-empty').classList.remove('hidden');
+  document.getElementById('view-active').classList.add('hidden');
+  currentInvId = null;
+}
+
+function showActive() {
+  document.getElementById('view-empty').classList.add('hidden');
+  document.getElementById('view-active').classList.remove('hidden');
+}
+
+// ── Charger un inventaire ────────────────────────────────────
+async function loadInventory(inv) {
+  currentInvId   = inv.id;
+  currentInvData = inv;
+  showActive();
+  updateInvHeader(inv);
+  renderPlaceSelects();
+
+  if (unsubLines) unsubLines();
+  unsubLines = listenInventoryLines(inv.id, lines => {
+    invLines = lines;
+    renderLines();
+    updateTotal();
+  });
+}
+
+function updateInvHeader(inv) {
+  document.getElementById('inv-title').textContent =
+    'Inventaire du ' + (inv.date ? inv.date.split('-').reverse().join('/') : '—');
+  document.getElementById('inv-meta').textContent =
+    `Par ${inv.createdBy || '—'} · Places : ${(inv.places || []).join(', ') || 'Toutes'}`;
+  const badge = document.getElementById('inv-status-badge');
+  badge.className = 'inventory-badge ' + (inv.status === 'confirmed' ? 'badge-confirmed' : 'badge-draft');
+  badge.textContent = inv.status === 'confirmed' ? 'Confirmé' : 'En cours';
+
+  // Masquer boutons si confirmé
+  const confirmBtn = document.getElementById('btn-confirm-inv');
+  const scanSection = document.getElementById('scan-section');
+  if (inv.status === 'confirmed') {
+    confirmBtn.style.display = 'none';
+    scanSection.style.display = 'none';
+  }
+}
+
+// ── Rendu lignes ─────────────────────────────────────────────
+function renderLines(filter = '') {
+  const container = document.getElementById('lines-container');
+  let filtered = invLines;
+
+  if (filter) {
+    filtered = invLines.filter(l =>
+      fuzzyMatch(l.articleNom, filter) || fuzzyMatch(l.place, filter)
+    );
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state" style="padding:40px;">
+      <div class="empty-state-icon">📦</div>
+      <p>${filter ? 'Aucun résultat pour "' + filter + '"' : 'Aucun article ajouté. Scannez ou recherchez.'}</p>
+    </div>`;
+    return;
+  }
+
+  // Grouper par place
+  const groups = {};
+  filtered.forEach(l => {
+    const p = l.place || '—';
+    if (!groups[p]) groups[p] = [];
+    groups[p].push(l);
+  });
+
+  let html = `<div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Article</th>
+          <th>Catégorie</th>
+          <th>Lieu</th>
+          <th style="text-align:right;">Quantité</th>
+          <th style="text-align:right;">Prix US</th>
+          <th style="text-align:right;">Valeur</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  filtered.forEach(l => {
+    const valeur = (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUs) || 0);
+    const isConfirmed = currentInvData?.status === 'confirmed';
+    html += `<tr>
+      <td class="fw-500">${l.articleNom}</td>
+      <td>${categoryBadge(l.categorie)}</td>
+      <td><span class="text-muted text-sm">${l.place || '—'}</span></td>
+      <td style="text-align:right;">
+        ${isConfirmed
+          ? `<span class="fw-600">${l.quantite} ${l.articleUs}</span>`
+          : `<input type="number" class="qty-input" value="${l.quantite}" min="0" step="0.1"
+              data-lineid="${l.id}" onchange="updateLineQty(this)">`
+        }
+      </td>
+      <td style="text-align:right;" class="mono text-sm">${formatCurrency(l.prixUs)}</td>
+      <td style="text-align:right;" class="fw-600">${formatCurrency(valeur)}</td>
+      <td>
+        ${isConfirmed ? '' : `<button class="btn btn-ghost btn-icon btn-sm" onclick="removeLine('${l.id}')" data-tooltip="Supprimer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>`}
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+
+  document.getElementById('lines-count').textContent = `${filtered.length} ligne${filtered.length > 1 ? 's' : ''}`;
+}
+
+window.updateLineQty = async function(input) {
+  const lineId = input.dataset.lineid;
+  const qty    = parseFloat(input.value) || 0;
+  try {
+    await setQuantity(lineId, qty);
+  } catch (e) {
+    toast('Erreur mise à jour', 'error');
+  }
+};
+
+window.removeLine = async function(lineId) {
+  if (!confirm('Supprimer cette ligne ?')) return;
+  try {
+    await deleteLine(lineId);
+    toast('Ligne supprimée', 'success');
+  } catch (e) {
+    toast('Erreur suppression', 'error');
+  }
+};
+
+function updateTotal() {
+  const val = calcInventoryValue(invLines);
+  document.getElementById('inv-total-value').textContent = formatCurrency(val);
+  document.getElementById('lines-total').textContent      = formatCurrency(val);
+}
+
+// ── Badge catégorie ──────────────────────────────────────────
+function categoryBadge(cat) {
+  const map = { FOOD:'badge-food', BEVERAGE:'badge-bev', CLEANING:'badge-clean', 'ONE WAY':'badge-oneway', OFFICE:'badge-office' };
+  const lbl = { FOOD:'Food', BEVERAGE:'Boisson', CLEANING:'Entretien', 'ONE WAY':'One Way', OFFICE:'Bureau' };
+  return `<span class="badge ${map[cat]||'badge-oneway'}">${lbl[cat]||cat}</span>`;
+}
+
+// ── Recherche dans les lignes ────────────────────────────────
+function setupSearch() {
+  document.getElementById('lines-search').addEventListener('input', e => {
+    renderLines(e.target.value.trim());
+  });
+}
+
+// ── Modals ───────────────────────────────────────────────────
+function setupModals() {
+  // Bouton nouvel inventaire
+  ['btn-new-inventory','btn-new-inventory-2'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', openNewInventoryModal);
+  });
+
+  // Créer inventaire
+  document.getElementById('btn-create-inv').addEventListener('click', handleCreateInventory);
+
+  // Historique
+  document.getElementById('btn-history').addEventListener('click', openHistoryModal);
+
+  // Confirmer inventaire
+  document.getElementById('btn-confirm-inv').addEventListener('click', handleConfirm);
+
+  // Export
+  document.getElementById('btn-export-inv').addEventListener('click', handleExport);
+}
+
+function openNewInventoryModal() {
+  // Date par défaut = aujourd'hui
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('inv-date').value = today;
+
+  // Checkboxes places
+  const checklist = document.getElementById('places-checklist');
+  checklist.innerHTML = allPlaces.length
+    ? allPlaces.map(p => `
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.875rem;">
+          <input type="checkbox" value="${p.id}" data-nom="${p.nom}" style="accent-color:var(--forest);">
+          ${p.nom}
+        </label>`).join('')
+    : '<p class="text-muted text-sm">Aucun emplacement défini. Configurez-les dans Réglages.</p>';
+
+  openModal('modal-new-inv');
+}
+
+async function handleCreateInventory() {
+  const date   = document.getElementById('inv-date').value;
+  const checks = document.querySelectorAll('#places-checklist input:checked');
+  const places = Array.from(checks).map(c => c.dataset.nom);
+
+  const displayName = currentUser.displayName || currentUser.email.split('@')[0];
+  try {
+    showLoading('Création…');
+    const ref = await createInventory({
+      date, places,
+      createdBy: displayName,
+      createdByEmail: currentUser.email,
+    });
+    closeModal('modal-new-inv');
+    const invs = await getAllInventories();
+    const inv  = invs.find(i => i.id === ref.id);
+    await loadInventory(inv || { id: ref.id, date, places, createdBy: displayName, status: 'draft' });
+    toast('Inventaire créé', 'success');
+    startScanner();
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function openHistoryModal() {
+  openModal('modal-history');
+  const list = document.getElementById('history-list');
+  list.innerHTML = '<div class="text-center text-muted" style="padding:20px;">Chargement…</div>';
+  try {
+    const invs = await getAllInventories();
+    if (!invs.length) {
+      list.innerHTML = '<div class="empty-state"><p>Aucun inventaire enregistré.</p></div>';
+      return;
+    }
+    list.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px;">' +
+      invs.map(inv => `
+        <div class="hist-card" onclick="loadHistInv('${inv.id}')">
+          <div class="hist-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div class="fw-600">Inventaire du ${inv.date?.split('-').reverse().join('/') || '—'}</div>
+            <div class="text-muted text-sm">Par ${inv.createdBy || '—'} · ${(inv.places||[]).join(', ')||'Toutes places'}</div>
+          </div>
+          <span class="badge ${inv.status==='confirmed'?'badge-confirmed':'badge-warning'}">
+            ${inv.status === 'confirmed' ? 'Confirmé' : 'En cours'}
+          </span>
+          ${inv.status !== 'confirmed' ? `<button class="btn btn-ghost btn-icon btn-sm text-danger" onclick="removeInv(event,'${inv.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>` : ''}
+        </div>`).join('') + '</div>';
+  } catch (e) {
+    list.innerHTML = '<p class="text-danger">Erreur chargement</p>';
+  }
+}
+
+window.loadHistInv = async function(id) {
+  closeModal('modal-history');
+  showLoading();
+  try {
+    const invs = await getAllInventories();
+    const inv  = invs.find(i => i.id === id);
+    if (inv) await loadInventory(inv);
+  } catch (e) {
+    toast('Erreur', 'error');
+  } finally {
+    hideLoading();
+  }
+};
+
+window.removeInv = async function(e, id) {
+  e.stopPropagation();
+  if (!confirm('Supprimer cet inventaire et toutes ses lignes ?')) return;
+  try {
+    await deleteInventory(id);
+    toast('Inventaire supprimé', 'success');
+    openHistoryModal();
+  } catch (err) {
+    toast('Erreur suppression', 'error');
+  }
+};
+
+async function handleConfirm() {
+  if (!currentInvId) return;
+  if (!confirm('Confirmer et figer cet inventaire ? Cette action est irréversible.')) return;
+  try {
+    await confirmInventory(currentInvId);
+    const invs = await getAllInventories();
+    const inv  = invs.find(i => i.id === currentInvId);
+    if (inv) updateInvHeader(inv);
+    clearDraftCache();
+    toast('Inventaire confirmé !', 'success');
+  } catch (e) {
+    toast('Erreur confirmation', 'error');
+  }
+}
+
+async function handleExport() {
+  if (!invLines.length) { toast('Aucune ligne à exporter', 'warning'); return; }
+  try {
+    const { default: XLSX } = await import('https://cdn.sheetjs.com/xlsx-0.20.0/package/xlsx.mjs');
+    const rows = invLines.map(l => ({
+      'Article':    l.articleNom,
+      'Catégorie':  l.categorie,
+      'Lieu':       l.place || '',
+      'Quantité':   l.quantite,
+      'Unité':      l.articleUs,
+      'Prix US €':  l.prixUs,
+      'Valeur €':   (l.quantite * l.prixUs).toFixed(2),
+    }));
+    const ws  = XLSX.utils.json_to_sheet(rows);
+    const wb  = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Inventaire');
+    const date = currentInvData?.date || new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `inventaire_${date}.xlsx`);
+    toast('Export Excel généré', 'success');
+  } catch (e) {
+    toast('Erreur export : ' + e.message, 'error');
+  }
+}
+
+// ── Scan ZXing ───────────────────────────────────────────────
+let codeReader = null;
+
+function setupScan() {
+  document.getElementById('btn-toggle-scan').addEventListener('click', () => {
+    if (scannerActive) {
+      stopScanner();
+    } else {
+      startScanner();
+    }
+  });
+
+  document.getElementById('btn-manual-add').addEventListener('click', performSearch);
+  document.getElementById('scan-search').addEventListener('keydown', e => {
+    if (e.key === 'Enter') performSearch();
+  });
+  document.getElementById('scan-search').addEventListener('input', e => {
+    if (!e.target.value.trim()) {
+      document.getElementById('scan-results').classList.add('hidden');
+      document.getElementById('scan-add-row').classList.add('hidden');
+    }
+  });
+
+  document.getElementById('btn-confirm-add').addEventListener('click', handleManualAdd);
+  document.getElementById('btn-scan-confirm').addEventListener('click', handleScanConfirm);
+}
+
+async function startScanner() {
+  if (!window.ZXing) { toast('Scanner non disponible', 'error'); return; }
+  try {
+    if (codeReader) codeReader.reset();
+    codeReader = new ZXing.BrowserMultiFormatReader();
+    const devices = await codeReader.listVideoInputDevices();
+    if (!devices.length) { toast('Aucune caméra détectée', 'warning'); return; }
+
+    scannerActive = true;
+    document.getElementById('btn-toggle-scan').textContent = 'Arrêter';
+    document.getElementById('scan-status').textContent = 'Scan actif — pointez vers un code-barre…';
+
+    // Préférer la caméra arrière sur mobile
+    const device = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
+
+    codeReader.decodeFromVideoDevice(device.deviceId, 'scan-video', (result, err) => {
+      if (result) {
+        const code = result.getText();
+        handleBarcodeFound(code);
+      }
+    });
+  } catch (e) {
+    toast('Erreur caméra : ' + e.message, 'error');
+    scannerActive = false;
+  }
+}
+
+function stopScanner() {
+  if (codeReader) { codeReader.reset(); codeReader = null; }
+  scannerActive = false;
+  document.getElementById('btn-toggle-scan').textContent = 'Activer scan';
+  document.getElementById('scan-status').textContent = 'Scan arrêté.';
+  const video = document.getElementById('scan-video');
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+}
+
+let lastScannedCode = null;
+let scanCooldown    = false;
+
+function handleBarcodeFound(code) {
+  if (scanCooldown || code === lastScannedCode) return;
+  lastScannedCode = code;
+  scanCooldown    = true;
+  setTimeout(() => { scanCooldown = false; lastScannedCode = null; }, 2000);
+
+  // Chercher l'article
+  const art = allArticles.find(a => a.codeBarres === code);
+  if (art) {
+    openScanFoundModal(art);
+    document.getElementById('scan-status').textContent = `✓ Code trouvé : ${art.nom}`;
+    document.getElementById('scan-status').className = 'scan-status found';
+    setTimeout(() => {
+      document.getElementById('scan-status').textContent = 'Scan actif…';
+      document.getElementById('scan-status').className = 'scan-status';
+    }, 3000);
+  } else {
+    document.getElementById('scan-status').textContent = `Code non trouvé : ${code}`;
+    document.getElementById('scan-search').value = code;
+    performSearch();
+  }
+}
+
+function openScanFoundModal(article) {
+  selectedArticle = article;
+  document.getElementById('scan-found-info').innerHTML = `
+    <div class="fw-600">${article.nom}</div>
+    <div class="text-muted text-sm mt-8">${article.categorie} · ${article.us} · ${formatCurrency(article.prixUc / (article.ratioUsUc || 1))}/US</div>`;
+  renderPlaceSelect('scan-found-place');
+  document.getElementById('scan-found-qty').value = '1';
+  openModal('modal-scan-found');
+}
+
+async function handleScanConfirm() {
+  if (!selectedArticle || !currentInvId) return;
+  const qty   = parseFloat(document.getElementById('scan-found-qty').value) || 1;
+  const place = document.getElementById('scan-found-place').value;
+  try {
+    await addQuantity(currentInvId, selectedArticle, qty, place);
+    closeModal('modal-scan-found');
+    toast(`+${qty} ${selectedArticle.us} · ${selectedArticle.nom}`, 'success');
+  } catch (e) {
+    toast('Erreur ajout : ' + e.message, 'error');
+  }
+}
+
+// ── Recherche manuelle ───────────────────────────────────────
+function performSearch() {
+  const q = document.getElementById('scan-search').value.trim();
+  if (!q) return;
+
+  const matches = allArticles.filter(a =>
+    fuzzyMatch(a.nom, q) ||
+    fuzzyMatch(a.codeBarres, q) ||
+    fuzzyMatch(a.codeArticle, q) ||
+    fuzzyMatch(a.fournisseur, q)
+  ).slice(0, 10);
+
+  const container = document.getElementById('scan-results');
+  if (!matches.length) {
+    container.classList.remove('hidden');
+    container.innerHTML = '<div style="padding:12px;font-size:.825rem;color:rgba(245,240,232,.4);">Aucun article trouvé.</div>';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  container.innerHTML = matches.map(a => `
+    <div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);font-size:.85rem;transition:.15s;"
+         onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''"
+         onclick="selectSearchResult('${a.id}')">
+      <span style="color:var(--cream);font-weight:500;">${a.nom}</span>
+      <span style="color:rgba(245,240,232,.4);margin-left:8px;">${a.us}</span>
+    </div>`).join('');
+}
+
+window.selectSearchResult = function(id) {
+  const art = allArticles.find(a => a.id === id);
+  if (!art) return;
+  selectedArticle = art;
+  document.getElementById('scan-results').classList.add('hidden');
+  document.getElementById('scan-selected-article').textContent = `${art.nom} (${art.us})`;
+  document.getElementById('scan-qty').value = '1';
+  renderPlaceSelect('scan-place-select');
+  document.getElementById('scan-add-row').classList.remove('hidden');
+};
+
+async function handleManualAdd() {
+  if (!selectedArticle || !currentInvId) return;
+  const qty   = parseFloat(document.getElementById('scan-qty').value) || 1;
+  const place = document.getElementById('scan-place-select').value;
+  try {
+    await addQuantity(currentInvId, selectedArticle, qty, place);
+    document.getElementById('scan-search').value = '';
+    document.getElementById('scan-add-row').classList.add('hidden');
+    document.getElementById('scan-selected-article').textContent = '—';
+    selectedArticle = null;
+    toast(`Ajouté : ${qty} × ${selectedArticle?.nom || 'article'}`, 'success');
+  } catch (e) {
+    toast('Erreur ajout', 'error');
+  }
+}
+
+// ── Renders places selects ───────────────────────────────────
+function renderPlaceSelects() {
+  renderPlaceSelect('scan-place-select');
+  renderPlaceSelect('scan-found-place');
+}
+
+function renderPlaceSelect(id) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Aucun lieu —</option>' +
+    allPlaces.map(p => `<option value="${p.nom}" ${p.nom===current?'selected':''}>${p.nom}</option>`).join('');
+}
+
+// Auto-démarrer scan si inventaire actif
+setTimeout(() => {
+  if (currentInvId && currentInvData?.status === 'draft') startScanner();
+}, 1000);
+
+</script>
+</body>
+</html>

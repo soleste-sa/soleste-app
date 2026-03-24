@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOLESTE — Réglages</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .place-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--cream);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+    .place-item:hover { border-color: var(--forest-lt); }
+    .place-name { font-weight: 500; }
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--cream);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+    .user-avatar-lg {
+      width: 40px; height: 40px;
+      background: var(--forest);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .settings-section {
+      margin-bottom: 36px;
+    }
+    .settings-section-title {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      color: var(--forest);
+      margin-bottom: 4px;
+    }
+    .settings-section-desc {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .cost-display {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--forest);
+      line-height: 1;
+    }
+    .cost-display sup { font-size: .8rem; font-family: var(--font-body); color: var(--muted); }
+    .firebase-config-box {
+      background: var(--charcoal);
+      color: var(--cream);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .firebase-config-box .key   { color: #f39c12; }
+    .firebase-config-box .val   { color: #a8d8a8; }
+    .firebase-config-box .punct { color: rgba(245,240,232,.4); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="logo">SOL<span>ESTE</span></div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">–</div>
+        <span id="user-name">–</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <nav class="app-sidebar">
+    <div class="nav-section">Navigation</div>
+    <a href="dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Tableau de bord
+    </a>
+    <div class="nav-section">Modules</div>
+    <a href="database.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Base articles
+    </a>
+    <a href="menu.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Menu engineering
+    </a>
+    <a href="inventory.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Inventaire
+    </a>
+    <div class="nav-section">Configuration</div>
+    <a href="settings.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Réglages
+    </a>
+  </nav>
+
+  <!-- Main -->
+  <main class="app-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Réglages</div>
+        <div class="page-subtitle">Configuration de l'application SOLESTE</div>
+      </div>
+    </div>
+
+    <div class="settings-grid">
+
+      <!-- Colonne gauche -->
+      <div>
+
+        <!-- Emplacements de stock -->
+        <div class="card settings-section">
+          <div class="card-header">
+            <div>
+              <div class="settings-section-title">📍 Emplacements (Places)</div>
+              <div class="settings-section-desc">Définissez les zones de stockage pour l'inventaire</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-add-place">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Ajouter
+            </button>
+          </div>
+
+          <!-- Champ ajout -->
+          <div id="add-place-row" class="hidden" style="display:none;gap:10px;align-items:center;margin-bottom:12px;">
+            <input type="text" id="new-place-input" class="form-control" placeholder="Nom de l'emplacement (ex: Cave, Frigo 1…)" style="flex:1;">
+            <button class="btn btn-olive btn-sm" id="btn-save-place">Créer</button>
+            <button class="btn btn-ghost btn-sm" id="btn-cancel-place">Annuler</button>
+          </div>
+
+          <div id="places-list">
+            <div class="text-center text-muted" style="padding:20px;font-size:.875rem;">Chargement…</div>
+          </div>
+        </div>
+
+        <!-- Coût horaire main d'œuvre -->
+        <div class="card settings-section">
+          <div class="settings-section-title">⏱ Coût horaire main d'œuvre</div>
+          <div class="settings-section-desc">Utilisé pour calculer le coût de préparation des recettes</div>
+
+          <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;">
+            <div style="flex:1;">
+              <label class="form-label">Coût horaire (€/h) — charges comprises</label>
+              <input type="number" id="hourly-cost" class="form-control" placeholder="Ex: 18.50" min="0" step="0.5">
+            </div>
+            <button class="btn btn-primary" id="btn-save-cost">Enregistrer</button>
+          </div>
+          <div style="background:var(--cream-dk);border-radius:var(--radius-lg);padding:16px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div class="label">Coût actuel</div>
+              <div class="cost-display" id="display-cost">—<sup> €/h</sup></div>
+            </div>
+            <div style="text-align:right;">
+              <div class="label">Coût/minute</div>
+              <div class="fw-600 text-forest" id="display-cost-min">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clé API Anthropic -->
+        <div class="card settings-section">
+          <div class="settings-section-title">🤖 Clé API Claude (OCR)</div>
+          <div class="settings-section-desc">Nécessaire pour la lecture des bons de livraison par IA</div>
+          <div class="form-group">
+            <label class="form-label">Clé API Anthropic</label>
+            <div style="display:flex;gap:10px;">
+              <input type="password" id="api-key-input" class="form-control" placeholder="sk-ant-…">
+              <button class="btn btn-primary" id="btn-save-apikey">Enregistrer</button>
+            </div>
+            <p class="form-hint">Stockée localement dans votre navigateur (non synchronisée).<br>
+              Obtenez votre clé sur <a href="https://console.anthropic.com" target="_blank" style="color:var(--forest);">console.anthropic.com</a></p>
+          </div>
+          <div id="api-key-status" class="hidden"></div>
+        </div>
+
+      </div>
+
+      <!-- Colonne droite -->
+      <div>
+
+        <!-- Compte utilisateur -->
+        <div class="card settings-section">
+          <div class="settings-section-title">👤 Compte utilisateur</div>
+          <div class="settings-section-desc">Votre profil de connexion</div>
+          <div class="user-item">
+            <div class="user-avatar-lg" id="settings-avatar">–</div>
+            <div style="flex:1;">
+              <div class="fw-600" id="settings-displayname">—</div>
+              <div class="text-muted text-sm" id="settings-email">—</div>
+            </div>
+            <span class="badge badge-success">Connecté</span>
+          </div>
+          <div class="form-group mt-16">
+            <label class="form-label">Nom d'affichage</label>
+            <div style="display:flex;gap:10px;">
+              <input type="text" id="display-name-input" class="form-control" placeholder="Votre prénom">
+              <button class="btn btn-outline btn-sm" id="btn-update-name">Modifier</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuration Firebase -->
+        <div class="card settings-section">
+          <div class="settings-section-title">🔥 Configuration Firebase</div>
+          <div class="settings-section-desc">Instructions de configuration initiale</div>
+
+          <div style="margin-bottom:14px;">
+            <p style="font-size:.825rem;line-height:1.7;color:var(--charcoal-lt);">
+              1. Aller sur <a href="https://console.firebase.google.com" target="_blank" style="color:var(--clay);">console.firebase.google.com</a><br>
+              2. Créer un projet <strong>soleste</strong><br>
+              3. Activer <strong>Authentication</strong> › Email/Mot de passe<br>
+              4. Activer <strong>Firestore Database</strong> (mode production)<br>
+              5. Aller dans <strong>Paramètres</strong> › Vos applications › Web<br>
+              6. Copier la config dans <code>js/firebase.js</code>
+            </p>
+          </div>
+
+          <div class="firebase-config-box">
+<span class="punct">// js/firebase.js</span>
+<span class="key">const</span> FIREBASE_CONFIG <span class="punct">= {</span>
+  <span class="key">apiKey</span><span class="punct">:</span>            <span class="val">"VOTRE_API_KEY"</span><span class="punct">,</span>
+  <span class="key">authDomain</span><span class="punct">:</span>        <span class="val">"projet.firebaseapp.com"</span><span class="punct">,</span>
+  <span class="key">projectId</span><span class="punct">:</span>         <span class="val">"VOTRE_PROJECT_ID"</span><span class="punct">,</span>
+  <span class="key">storageBucket</span><span class="punct">:</span>     <span class="val">"projet.appspot.com"</span><span class="punct">,</span>
+  <span class="key">messagingSenderId</span><span class="punct">:</span> <span class="val">"SENDER_ID"</span><span class="punct">,</span>
+  <span class="key">appId</span><span class="punct">:</span>             <span class="val">"APP_ID"</span>
+<span class="punct">};</span></div>
+
+          <div style="margin-top:14px;padding:12px 14px;background:rgba(16,86,91,.06);border-radius:var(--radius);border-left:3px solid var(--forest);">
+            <p style="font-size:.8rem;color:var(--forest-dk);font-weight:500;margin-bottom:6px;">Règles Firestore recommandées</p>
+            <p style="font-size:.78rem;color:var(--charcoal-lt);line-height:1.6;">Accès lecture/écriture pour utilisateurs authentifiés uniquement.</p>
+          </div>
+        </div>
+
+        <!-- Infos app -->
+        <div class="card">
+          <div class="settings-section-title">ℹ️ À propos</div>
+          <div class="settings-section-desc">Informations sur l'application</div>
+          <table style="width:100%;font-size:.875rem;">
+            <tr><td class="text-muted" style="padding:6px 0;">Application</td><td class="fw-600">SOLESTE</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0;">Version</td><td>1.0.0</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0;">Propriétaire</td><td>Soleste SA</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0;">Hébergement</td><td>GitHub Pages</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0;">Base de données</td><td>Firebase Firestore</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0;">OCR</td><td>Claude API (Anthropic)</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+import { auth, db } from './js/firebase.js';
+import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { toast, formatCurrency } from './js/utils.js';
+import { getPlaces, createPlace, deletePlace, listenPlaces } from './js/inventory.js';
+import { getSettings, saveSettings } from './js/settings.js';
+
+// ── Auth ─────────────────────────────────────────────────────
+let currentUser = null;
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  const displayName = user.displayName || user.email.split('@')[0];
+  document.getElementById('user-avatar').textContent   = displayName.substring(0,2).toUpperCase();
+  document.getElementById('user-name').textContent     = displayName;
+  document.getElementById('settings-avatar').textContent = displayName.substring(0,2).toUpperCase();
+  document.getElementById('settings-displayname').textContent = displayName;
+  document.getElementById('settings-email').textContent = user.email;
+  document.getElementById('display-name-input').value   = user.displayName || '';
+  await init();
+});
+
+document.getElementById('logout-btn')?.addEventListener('click', async () => {
+  const { signOut } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+  await signOut(auth);
+  window.location.href = 'index.html';
+});
+
+// ── Init ─────────────────────────────────────────────────────
+async function init() {
+  // Charger réglages
+  const settings = await getSettings();
+  if (settings.hourlyCost) {
+    document.getElementById('hourly-cost').value = settings.hourlyCost;
+    updateCostDisplay(settings.hourlyCost);
+  }
+
+  // Clé API depuis localStorage
+  const apiKey = localStorage.getItem('soleste_anthropic_key') || '';
+  if (apiKey) {
+    document.getElementById('api-key-input').value = apiKey;
+    showApiKeyStatus(true);
+  }
+
+  // Places
+  listenPlaces(renderPlaces);
+}
+
+// ── Places ───────────────────────────────────────────────────
+function renderPlaces(places) {
+  const list = document.getElementById('places-list');
+  if (!places.length) {
+    list.innerHTML = '<p class="text-muted text-sm" style="padding:12px 0;">Aucun emplacement défini.</p>';
+    return;
+  }
+  list.innerHTML = places.map(p => `
+    <div class="place-item">
+      <div class="place-name">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--forest);margin-right:8px;vertical-align:middle;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${p.nom}
+      </div>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="removePlace('${p.id}')" data-tooltip="Supprimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+window.removePlace = async function(id) {
+  if (!confirm('Supprimer cet emplacement ?')) return;
+  try {
+    await deletePlace(id);
+    toast('Emplacement supprimé', 'success');
+  } catch (e) {
+    toast('Erreur suppression', 'error');
+  }
+};
+
+// Afficher/masquer champ ajout
+document.getElementById('btn-add-place').addEventListener('click', () => {
+  const row = document.getElementById('add-place-row');
+  row.style.display = 'flex';
+  row.classList.remove('hidden');
+  document.getElementById('new-place-input').focus();
+});
+
+document.getElementById('btn-cancel-place').addEventListener('click', () => {
+  document.getElementById('add-place-row').style.display = 'none';
+  document.getElementById('new-place-input').value = '';
+});
+
+document.getElementById('btn-save-place').addEventListener('click', async () => {
+  const nom = document.getElementById('new-place-input').value.trim();
+  if (!nom) { toast('Entrez un nom d\'emplacement', 'warning'); return; }
+  try {
+    await createPlace(nom);
+    document.getElementById('new-place-input').value = '';
+    document.getElementById('add-place-row').style.display = 'none';
+    toast(`Emplacement "${nom}" créé`, 'success');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+});
+
+document.getElementById('new-place-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-save-place').click();
+  if (e.key === 'Escape') document.getElementById('btn-cancel-place').click();
+});
+
+// ── Coût horaire ─────────────────────────────────────────────
+document.getElementById('btn-save-cost').addEventListener('click', async () => {
+  const cost = parseFloat(document.getElementById('hourly-cost').value);
+  if (!cost || cost <= 0) { toast('Entrez un coût valide', 'warning'); return; }
+  try {
+    await saveSettings({ hourlyCost: cost });
+    updateCostDisplay(cost);
+    toast('Coût horaire enregistré', 'success');
+  } catch (e) {
+    toast('Erreur enregistrement', 'error');
+  }
+});
+
+function updateCostDisplay(cost) {
+  document.getElementById('display-cost').innerHTML = `${parseFloat(cost).toFixed(2).replace('.',',')} <sup>€/h</sup>`;
+  document.getElementById('display-cost-min').textContent = `${(cost / 60).toFixed(4).replace('.',',')} €/min`;
+}
+
+// ── Clé API ──────────────────────────────────────────────────
+document.getElementById('btn-save-apikey').addEventListener('click', () => {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key.startsWith('sk-ant-')) {
+    toast('Clé invalide — doit commencer par sk-ant-', 'error');
+    return;
+  }
+  localStorage.setItem('soleste_anthropic_key', key);
+  showApiKeyStatus(true);
+  toast('Clé API enregistrée dans ce navigateur', 'success');
+});
+
+function showApiKeyStatus(ok) {
+  const el = document.getElementById('api-key-status');
+  el.classList.remove('hidden');
+  el.innerHTML = ok
+    ? '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(39,174,96,.1);border-radius:var(--radius);font-size:.825rem;color:var(--success);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> Clé API configurée</div>'
+    : '<div style="padding:10px 14px;background:rgba(192,57,43,.1);border-radius:var(--radius);font-size:.825rem;color:var(--danger);">Aucune clé configurée</div>';
+}
+
+// ── Nom d'affichage ──────────────────────────────────────────
+document.getElementById('btn-update-name').addEventListener('click', async () => {
+  const name = document.getElementById('display-name-input').value.trim();
+  if (!name) { toast('Entrez un nom', 'warning'); return; }
+  try {
+    await updateProfile(currentUser, { displayName: name });
+    document.getElementById('settings-displayname').textContent = name;
+    document.getElementById('user-name').textContent = name;
+    document.getElementById('settings-avatar').textContent = name.substring(0,2).toUpperCase();
+    document.getElementById('user-avatar').textContent = name.substring(0,2).toUpperCase();
+    toast('Nom mis à jour', 'success');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+});
+</script>
+</body>
+</html>

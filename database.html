@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOLESTE — Base articles</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .filter-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+    .filter-btn { padding:5px 14px; border-radius:99px; font-size:.78rem; font-weight:600; cursor:pointer; border:1.5px solid var(--border-dk); background:var(--white); color:var(--charcoal-lt); transition:var(--transition); }
+    .filter-btn:hover { border-color:var(--forest); color:var(--forest); }
+    .filter-btn.active { background:var(--forest); border-color:var(--forest); color:white; }
+    .ocr-result-row { display:grid; grid-template-columns:auto 2fr 1fr 1fr 1fr; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:.85rem; }
+    .ocr-result-row input { padding:5px 9px; border:1.5px solid var(--border-dk); border-radius:var(--radius-sm); font-size:.85rem; width:100%; outline:none; }
+    .ocr-result-row input:focus { border-color:var(--forest); }
+    .badge-new    { background:rgba(39,174,96,.12); color:var(--success); }
+    .badge-update { background:rgba(200,106,74,.12); color:var(--clay); }
+    .badge-exists { background:rgba(138,138,138,.1); color:var(--muted); }
+    .import-preview-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:.82rem; }
+    .import-preview-row.dup { background:rgba(200,106,74,.04); }
+    .sortable { cursor:pointer; user-select:none; }
+    .sortable:hover { color:var(--forest); }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="logo">SOL<span>ESTE</span></div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">–</div>
+        <span id="user-name">–</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <nav class="app-sidebar">
+    <div class="nav-section">Navigation</div>
+    <a href="dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Tableau de bord
+    </a>
+    <div class="nav-section">Modules</div>
+    <a href="database.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Base articles
+    </a>
+    <a href="menu.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Menu engineering
+    </a>
+    <a href="inventory.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Inventaire
+    </a>
+    <div class="nav-section">Configuration</div>
+    <a href="settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      Réglages
+    </a>
+  </nav>
+
+  <!-- Main -->
+  <main class="app-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Base articles</div>
+        <div class="page-subtitle">Gestion des produits, prix et fournisseurs</div>
+      </div>
+      <div class="flex gap-8">
+        <button class="btn btn-secondary" id="btn-import-excel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Import Excel/CSV
+        </button>
+        <button class="btn btn-secondary" id="btn-ocr">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3L14.5 4z"/><circle cx="12" cy="13" r="3"/></svg>
+          Bon de livraison (OCR)
+        </button>
+        <button class="btn btn-primary" id="btn-new-article">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nouvel article
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="filter-bar">
+      <div class="search-bar" style="max-width:300px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="search-input" placeholder="Rechercher un article…">
+      </div>
+      <button class="filter-btn active" data-cat="ALL">Tous</button>
+      <button class="filter-btn" data-cat="FOOD">Food</button>
+      <button class="filter-btn" data-cat="BEVERAGE">Boisson</button>
+      <button class="filter-btn" data-cat="CLEANING">Entretien</button>
+      <button class="filter-btn" data-cat="ONE WAY">One Way</button>
+      <button class="filter-btn" data-cat="OFFICE">Bureau</button>
+      <span class="text-muted" style="margin-left:auto;font-size:.8rem;" id="count-label">–</span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table id="articles-table">
+        <thead>
+          <tr>
+            <th class="sortable" data-col="name">Nom article ↕</th>
+            <th>Catégorie</th>
+            <th class="sortable" data-col="supplier">Fournisseur ↕</th>
+            <th>UC</th>
+            <th>US</th>
+            <th class="sortable" data-col="priceUC">Prix UC ↕</th>
+            <th>Code article</th>
+            <th>Code-barre</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="articles-body">
+          <tr><td colspan="9" class="table-empty"><div class="spinner" style="margin:0 auto 8px;"></div>Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ══ Modal : Nouvel / Edit Article ══════════════════════════ -->
+<div class="modal-backdrop" id="modal-article">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-article-title">Nouvel article</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-article')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="article-id">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label class="form-label">Nom de l'article <span class="required">*</span></label>
+          <input type="text" id="art-name" class="form-control" placeholder="ex: Farine T55 Moul-Bie">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catégorie <span class="required">*</span></label>
+          <select id="art-category" class="form-control">
+            <option value="FOOD">Food</option>
+            <option value="BEVERAGE">Beverage</option>
+            <option value="CLEANING">Cleaning</option>
+            <option value="ONE WAY">One Way</option>
+            <option value="OFFICE">Office</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">Unité de commande (UC) <span class="required">*</span></label>
+          <input type="text" id="art-uc" class="form-control" placeholder="ex: carton 6×5kg">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unité de stockage (US) <span class="required">*</span></label>
+          <input type="text" id="art-us" class="form-control" placeholder="ex: kg">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ratio US/UC <span class="required">*</span></label>
+          <input type="number" id="art-ratio" class="form-control" placeholder="ex: 30" step="0.001" min="0">
+          <div class="form-hint">Nombre d'US dans 1 UC</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Prix UC HTVA (€) <span class="required">*</span></label>
+          <input type="number" id="art-price-uc" class="form-control" placeholder="ex: 24.50" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prix US HTVA (calculé)</label>
+          <input type="text" id="art-price-us-display" class="form-control" readonly style="background:var(--cream);">
+          <div class="form-hint">= Prix UC ÷ Ratio</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fournisseur</label>
+          <input type="text" id="art-supplier" class="form-control" placeholder="ex: Metro, Transgourmet…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Code article fournisseur</label>
+          <input type="text" id="art-supplier-code" class="form-control" placeholder="ex: TG-45821">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Code-barre (EAN)</label>
+        <input type="text" id="art-barcode" class="form-control" placeholder="ex: 5410341820012" class="mono">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-article')">Annuler</button>
+      <button class="btn btn-danger btn-sm hidden" id="btn-delete-article">Supprimer</button>
+      <button class="btn btn-primary" id="btn-save-article">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal : Import Excel/CSV ══════════════════════════════ -->
+<div class="modal-backdrop" id="modal-import">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title">Import Excel / CSV</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-import')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="import-upload-zone">
+        <div class="upload-zone" id="import-drop-zone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p><strong>Glissez un fichier Excel ou CSV</strong><br>ou cliquez pour sélectionner</p>
+          <p style="margin-top:8px;font-size:.75rem;">Colonnes attendues : Nom, Catégorie, UC, US, Ratio, Prix UC, Fournisseur, Code article, Code-barre</p>
+        </div>
+        <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none">
+        <div style="margin-top:16px;">
+          <a href="#" id="download-template" style="font-size:.82rem;color:var(--forest);">
+            📥 Télécharger le modèle Excel
+          </a>
+        </div>
+      </div>
+      <div id="import-preview" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:.88rem;"><span id="import-new-count" class="badge badge-success">0 nouveau</span> <span id="import-update-count" class="badge badge-warning" style="margin-left:6px;">0 mise à jour</span></div>
+          <button class="btn btn-ghost btn-sm" id="import-reset-btn">← Changer de fichier</button>
+        </div>
+        <div class="import-preview-row" style="font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">
+          <span>Nom</span><span>Catégorie</span><span>Prix UC</span><span>Fournisseur</span><span>Statut</span>
+        </div>
+        <div id="import-rows-container" style="max-height:300px;overflow-y:auto;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-import')">Annuler</button>
+      <button class="btn btn-primary hidden" id="btn-confirm-import">
+        <span id="import-btn-label">Importer</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal : OCR Bon de livraison ═══════════════════════════ -->
+<div class="modal-backdrop" id="modal-ocr">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title">Lecture OCR — Bon de livraison</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('modal-ocr')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: Upload -->
+      <div id="ocr-step-1">
+        <div class="upload-zone" id="ocr-drop-zone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3L14.5 4z"/><circle cx="12" cy="13" r="3"/></svg>
+          <p><strong>Photo ou PDF du bon de livraison</strong><br>Glissez ou cliquez pour sélectionner</p>
+          <p style="margin-top:8px;font-size:.75rem;">Formats : JPG, PNG, PDF · Traitement par IA Claude</p>
+        </div>
+        <input type="file" id="ocr-file-input" accept="image/*,.pdf" style="display:none">
+        <div style="margin-top:12px;padding:12px 16px;background:rgba(16,86,91,.06);border-radius:var(--radius);font-size:.82rem;color:var(--charcoal-lt);">
+          <strong>🔑 Clé API Anthropic</strong> — La lecture OCR utilise Claude Vision.
+          <br>Configurez votre clé dans <a href="settings.html" style="color:var(--forest);">Réglages</a>.
+        </div>
+      </div>
+
+      <!-- Step 2: Processing -->
+      <div id="ocr-step-2" class="hidden" style="text-align:center;padding:40px;">
+        <div class="spinner" style="width:48px;height:48px;border-width:4px;margin:0 auto 20px;"></div>
+        <p style="color:var(--forest-dk);font-weight:500;">Analyse du document en cours…</p>
+        <p class="text-muted" style="font-size:.82rem;margin-top:8px;">Claude Vision analyse votre bon de livraison</p>
+      </div>
+
+      <!-- Step 3: Results -->
+      <div id="ocr-step-3" class="hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <strong id="ocr-result-title">Articles détectés</strong>
+            <span id="ocr-stats" style="font-size:.82rem;color:var(--muted);margin-left:12px;"></span>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="ocr-reset-btn">← Nouveau document</button>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 2fr 1fr 1fr 1fr;gap:12px;padding:8px 0;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);">
+          <span>Inclure</span><span>Nom article</span><span>Prix UC</span><span>Fournisseur</span><span>Statut</span>
+        </div>
+        <div id="ocr-results-container" style="max-height:350px;overflow-y:auto;"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-ocr')">Fermer</button>
+      <button class="btn btn-primary hidden" id="btn-confirm-ocr">Valider la sélection</button>
+    </div>
+  </div>
+</div>
+
+<!-- SheetJS for Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script type="module">
+import { auth, db } from './js/firebase.js';
+import {
+  collection, doc, addDoc, updateDoc, deleteDoc,
+  getDocs, onSnapshot, serverTimestamp, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { toast, normalize, fuzzyMatch, categoryBadge, formatCurrency, openModal, closeModal, setupModalClose, debounce } from './js/utils.js';
+
+window.closeModal = closeModal;
+window.openModal  = openModal;
+
+let currentUser = null;
+let allArticles  = [];
+let currentFilter= 'ALL';
+let sortCol      = 'name';
+let sortDir      = 1;
+let editingId    = null;
+let importData   = [];
+let ocrData      = [];
+
+// ── Auth ────────────────────────────────────────────────────
+onAuthStateChanged(auth, user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-avatar').textContent = name.slice(0,2).toUpperCase();
+  loadArticles();
+});
+document.getElementById('logout-btn').addEventListener('click', async () => { await signOut(auth); window.location.href = 'index.html'; });
+
+// ── Load Articles (realtime) ─────────────────────────────────
+function loadArticles() {
+  const q = query(collection(db, 'articles'), orderBy('name'));
+  onSnapshot(q, snap => {
+    allArticles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTable();
+  }, err => {
+    console.error(err);
+    toast('Erreur de chargement de la base articles', 'error');
+  });
+}
+
+// ── Render Table ─────────────────────────────────────────────
+function renderTable() {
+  const searchVal = document.getElementById('search-input').value.trim();
+  let filtered = allArticles.filter(a => {
+    const matchCat  = currentFilter === 'ALL' || a.category === currentFilter;
+    const matchSearch = !searchVal || fuzzyMatch(a.name, searchVal) || fuzzyMatch(a.supplier, searchVal) || fuzzyMatch(a.supplierCode, searchVal);
+    return matchCat && matchSearch;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    const av = (a[sortCol] || '').toString().toLowerCase();
+    const bv = (b[sortCol] || '').toString().toLowerCase();
+    if (sortCol === 'priceUC') return sortDir * (parseFloat(a.priceUC||0) - parseFloat(b.priceUC||0));
+    return sortDir * av.localeCompare(bv, 'fr');
+  });
+
+  document.getElementById('count-label').textContent = `${filtered.length} article${filtered.length>1?'s':''}`;
+
+  const tbody = document.getElementById('articles-body');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="table-empty">Aucun article trouvé</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(a => {
+    const priceUS = a.ratio ? (a.priceUC / a.ratio) : 0;
+    return `<tr>
+      <td><strong>${escHtml(a.name)}</strong></td>
+      <td>${categoryBadge(a.category)}</td>
+      <td>${escHtml(a.supplier || '—')}</td>
+      <td style="font-size:.82rem;">${escHtml(a.uc || '—')}</td>
+      <td style="font-size:.82rem;">${escHtml(a.us || '—')}</td>
+      <td class="mono">${formatCurrency(a.priceUC)}</td>
+      <td class="mono" style="font-size:.78rem;">${escHtml(a.supplierCode || '—')}</td>
+      <td class="mono" style="font-size:.78rem;">${escHtml(a.barcode || '—')}</td>
+      <td class="actions">
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="editArticle('${a.id}')" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+window.editArticle = editArticle;
+
+// ── Filters ──────────────────────────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.cat;
+    renderTable();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input', debounce(renderTable, 200));
+
+// Sort
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortCol === col) sortDir *= -1;
+    else { sortCol = col; sortDir = 1; }
+    renderTable();
+  });
+});
+
+// ── New Article Modal ────────────────────────────────────────
+function openArticleModal(article = null) {
+  editingId = article?.id || null;
+  document.getElementById('modal-article-title').textContent = article ? 'Modifier l\'article' : 'Nouvel article';
+  document.getElementById('article-id').value  = article?.id || '';
+  document.getElementById('art-name').value     = article?.name || '';
+  document.getElementById('art-category').value = article?.category || 'FOOD';
+  document.getElementById('art-uc').value        = article?.uc || '';
+  document.getElementById('art-us').value        = article?.us || '';
+  document.getElementById('art-ratio').value     = article?.ratio || '';
+  document.getElementById('art-price-uc').value  = article?.priceUC || '';
+  document.getElementById('art-supplier').value  = article?.supplier || '';
+  document.getElementById('art-supplier-code').value = article?.supplierCode || '';
+  document.getElementById('art-barcode').value   = article?.barcode || '';
+  updatePriceUS();
+  document.getElementById('btn-delete-article').classList.toggle('hidden', !article);
+  openModal('modal-article');
+}
+
+function editArticle(id) {
+  const article = allArticles.find(a => a.id === id);
+  if (article) openArticleModal(article);
+}
+
+function updatePriceUS() {
+  const price = parseFloat(document.getElementById('art-price-uc').value) || 0;
+  const ratio = parseFloat(document.getElementById('art-ratio').value) || 0;
+  const display = ratio > 0 ? formatCurrency(price / ratio, 4) : '—';
+  document.getElementById('art-price-us-display').value = display;
+}
+
+document.getElementById('art-price-uc').addEventListener('input', updatePriceUS);
+document.getElementById('art-ratio').addEventListener('input', updatePriceUS);
+document.getElementById('btn-new-article').addEventListener('click', () => openArticleModal());
+setupModalClose('modal-article');
+
+// ── Save Article ─────────────────────────────────────────────
+document.getElementById('btn-save-article').addEventListener('click', async () => {
+  const name = document.getElementById('art-name').value.trim();
+  if (!name) { toast('Le nom de l\'article est obligatoire', 'warning'); return; }
+
+  const data = {
+    name,
+    category:     document.getElementById('art-category').value,
+    uc:           document.getElementById('art-uc').value.trim(),
+    us:           document.getElementById('art-us').value.trim(),
+    ratio:        parseFloat(document.getElementById('art-ratio').value) || 0,
+    priceUC:      parseFloat(document.getElementById('art-price-uc').value) || 0,
+    supplier:     document.getElementById('art-supplier').value.trim(),
+    supplierCode: document.getElementById('art-supplier-code').value.trim(),
+    barcode:      document.getElementById('art-barcode').value.trim(),
+    updatedAt:    serverTimestamp(),
+    updatedBy:    currentUser.email,
+  };
+
+  try {
+    if (editingId) {
+      await updateDoc(doc(db, 'articles', editingId), data);
+      toast('Article mis à jour', 'success');
+    } else {
+      data.createdAt = serverTimestamp();
+      await addDoc(collection(db, 'articles'), data);
+      logActivity('database', `Article ajouté : ${name}`);
+      toast('Article créé', 'success');
+    }
+    closeModal('modal-article');
+  } catch (e) {
+    toast('Erreur lors de l\'enregistrement', 'error');
+    console.error(e);
+  }
+});
+
+// ── Delete Article ───────────────────────────────────────────
+document.getElementById('btn-delete-article').addEventListener('click', async () => {
+  if (!editingId) return;
+  if (!confirm('Supprimer cet article ? Cette action est irréversible.')) return;
+  try {
+    await deleteDoc(doc(db, 'articles', editingId));
+    toast('Article supprimé', 'success');
+    closeModal('modal-article');
+  } catch { toast('Erreur lors de la suppression', 'error'); }
+});
+
+// ── Activity Log ─────────────────────────────────────────────
+async function logActivity(module, message) {
+  try {
+    await addDoc(collection(db, 'activityLog'), {
+      module, message,
+      user: currentUser?.displayName || currentUser?.email,
+      createdAt: serverTimestamp()
+    });
+  } catch {}
+}
+
+// ══ IMPORT Excel/CSV ═════════════════════════════════════════
+document.getElementById('btn-import-excel').addEventListener('click', () => openModal('modal-import'));
+setupModalClose('modal-import');
+
+const importDropZone = document.getElementById('import-drop-zone');
+const importFileInput = document.getElementById('import-file-input');
+
+importDropZone.addEventListener('click', () => importFileInput.click());
+importDropZone.addEventListener('dragover', e => { e.preventDefault(); importDropZone.classList.add('drag-over'); });
+importDropZone.addEventListener('dragleave', () => importDropZone.classList.remove('drag-over'));
+importDropZone.addEventListener('drop', e => { e.preventDefault(); importDropZone.classList.remove('drag-over'); handleImportFile(e.dataTransfer.files[0]); });
+importFileInput.addEventListener('change', e => handleImportFile(e.target.files[0]));
+
+document.getElementById('import-reset-btn').addEventListener('click', resetImport);
+function resetImport() {
+  document.getElementById('import-upload-zone').classList.remove('hidden');
+  document.getElementById('import-preview').classList.add('hidden');
+  document.getElementById('btn-confirm-import').classList.add('hidden');
+  importFileInput.value = '';
+  importData = [];
+}
+
+async function handleImportFile(file) {
+  if (!file) return;
+  const isCSV = file.name.endsWith('.csv');
+
+  try {
+    const buf = await file.arrayBuffer();
+    const wb  = XLSX.read(buf, { type: 'array' });
+    const ws  = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    importData = rows.map(r => ({
+      name:         r['Nom'] || r['name'] || '',
+      category:     r['Catégorie'] || r['category'] || 'FOOD',
+      uc:           r['UC'] || r['uc'] || '',
+      us:           r['US'] || r['us'] || '',
+      ratio:        parseFloat(r['Ratio'] || r['ratio']) || 0,
+      priceUC:      parseFloat(r['Prix UC'] || r['priceUC']) || 0,
+      supplier:     r['Fournisseur'] || r['supplier'] || '',
+      supplierCode: r['Code article'] || r['supplierCode'] || '',
+      barcode:      r['Code-barre'] || r['barcode'] || '',
+    })).filter(r => r.name);
+
+    // Detect duplicates
+    const existingNames = new Set(allArticles.map(a => normalize(a.name)));
+    let newCount = 0, updateCount = 0;
+    const tagged = importData.map(r => {
+      const isUpdate = existingNames.has(normalize(r.name));
+      if (isUpdate) updateCount++; else newCount++;
+      return { ...r, _status: isUpdate ? 'update' : 'new' };
+    });
+    importData = tagged;
+
+    document.getElementById('import-new-count').textContent    = `${newCount} nouveau${newCount>1?'x':''}`;
+    document.getElementById('import-update-count').textContent = `${updateCount} mise${updateCount>1?'s':''} à jour`;
+
+    const container = document.getElementById('import-rows-container');
+    container.innerHTML = tagged.map((r, i) => `
+      <div class="import-preview-row ${r._status==='update'?'dup':''}">
+        <span>${escHtml(r.name)}</span>
+        <span>${escHtml(r.category)}</span>
+        <span class="mono">${formatCurrency(r.priceUC)}</span>
+        <span>${escHtml(r.supplier)}</span>
+        <span><span class="badge ${r._status==='new'?'badge-new':'badge-update'}">${r._status==='new'?'Nouveau':'Mise à jour'}</span></span>
+      </div>`).join('');
+
+    document.getElementById('import-upload-zone').classList.add('hidden');
+    document.getElementById('import-preview').classList.remove('hidden');
+    document.getElementById('btn-confirm-import').classList.remove('hidden');
+    document.getElementById('import-btn-label').textContent = `Importer ${importData.length} article${importData.length>1?'s':''}`;
+  } catch (e) {
+    toast('Erreur de lecture du fichier', 'error');
+    console.error(e);
+  }
+}
+
+document.getElementById('btn-confirm-import').addEventListener('click', async () => {
+  if (!importData.length) return;
+  const btn = document.getElementById('btn-confirm-import');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:white;"></span> Import en cours…';
+
+  let added = 0, updated = 0;
+  for (const row of importData) {
+    const { _status, ...data } = row;
+    data.updatedAt = serverTimestamp();
+    data.updatedBy = currentUser.email;
+    try {
+      if (_status === 'update') {
+        const existing = allArticles.find(a => normalize(a.name) === normalize(data.name));
+        if (existing) { await updateDoc(doc(db, 'articles', existing.id), data); updated++; }
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'articles'), data);
+        added++;
+      }
+    } catch (e) { console.error('Import row error', e); }
+  }
+  toast(`Import terminé : ${added} ajouté${added>1?'s':''}, ${updated} mis à jour`, 'success');
+  logActivity('database', `Import Excel : ${added} ajouté(s), ${updated} mis à jour`);
+  closeModal('modal-import');
+  resetImport();
+  btn.disabled = false;
+});
+
+// Template download
+document.getElementById('download-template').addEventListener('click', e => {
+  e.preventDefault();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['Nom','Catégorie','UC','US','Ratio','Prix UC','Fournisseur','Code article','Code-barre'],
+    ['Farine T55','FOOD','sac 25kg','kg',25,18.50,'Metro','MET-4521','5410341820012'],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Articles');
+  XLSX.writeFile(wb, 'modele_articles_soleste.xlsx');
+});
+
+// ══ OCR ══════════════════════════════════════════════════════
+document.getElementById('btn-ocr').addEventListener('click', () => openModal('modal-ocr'));
+setupModalClose('modal-ocr');
+
+const ocrDropZone  = document.getElementById('ocr-drop-zone');
+const ocrFileInput = document.getElementById('ocr-file-input');
+
+ocrDropZone.addEventListener('click', () => ocrFileInput.click());
+ocrDropZone.addEventListener('dragover', e => { e.preventDefault(); ocrDropZone.classList.add('drag-over'); });
+ocrDropZone.addEventListener('dragleave', () => ocrDropZone.classList.remove('drag-over'));
+ocrDropZone.addEventListener('drop', e => { e.preventDefault(); ocrDropZone.classList.remove('drag-over'); handleOCRFile(e.dataTransfer.files[0]); });
+ocrFileInput.addEventListener('change', e => handleOCRFile(e.target.files[0]));
+
+document.getElementById('ocr-reset-btn').addEventListener('click', resetOCR);
+function resetOCR() {
+  document.getElementById('ocr-step-1').classList.remove('hidden');
+  document.getElementById('ocr-step-2').classList.add('hidden');
+  document.getElementById('ocr-step-3').classList.add('hidden');
+  document.getElementById('btn-confirm-ocr').classList.add('hidden');
+  ocrFileInput.value = '';
+  ocrData = [];
+}
+
+async function handleOCRFile(file) {
+  if (!file) return;
+
+  // Get API key from settings
+  const apiKey = localStorage.getItem('soleste_anthropic_key');
+  if (!apiKey) {
+    toast('Clé API Anthropic manquante. Configurez-la dans les Réglages.', 'warning');
+    return;
+  }
+
+  // Show loading
+  document.getElementById('ocr-step-1').classList.add('hidden');
+  document.getElementById('ocr-step-2').classList.remove('hidden');
+
+  try {
+    // Read file as base64
+    const base64 = await fileToBase64(file);
+    const mediaType = file.type || 'image/jpeg';
+
+    const prompt = `Tu analyses un bon de livraison ou une facture fournisseur en français ou néerlandais.
+Extrais la liste de tous les articles présents avec leurs informations disponibles.
+Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans commentaires :
+{
+  "supplier": "nom du fournisseur si visible",
+  "items": [
+    {
+      "name": "nom de l'article",
+      "uc": "unité de commande si visible",
+      "priceUC": 0.00,
+      "supplierCode": "code article si visible",
+      "barcode": "code-barre si visible",
+      "quantity": 0
+    }
+  ]
+}
+Si une information n'est pas visible, utilise une chaîne vide "" ou 0.`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    const result = await response.json();
+    let parsed;
+    try {
+      const raw = result.content[0].text.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error('Réponse IA non analysable');
+    }
+
+    const items = parsed.items || [];
+    const supplier = parsed.supplier || '';
+
+    // Tag each item vs existing articles
+    const existingNames = new Set(allArticles.map(a => normalize(a.name)));
+    ocrData = items.map((item, i) => {
+      const isExisting = existingNames.has(normalize(item.name));
+      return { ...item, _id: i, _supplier: supplier, _status: isExisting ? 'exists' : 'new', _include: !isExisting };
+    });
+
+    renderOCRResults(supplier);
+
+  } catch (e) {
+    toast('Erreur OCR : ' + e.message, 'error');
+    console.error(e);
+    resetOCR();
+  }
+}
+
+function renderOCRResults(supplier) {
+  document.getElementById('ocr-step-2').classList.add('hidden');
+  document.getElementById('ocr-step-3').classList.remove('hidden');
+  document.getElementById('btn-confirm-ocr').classList.remove('hidden');
+
+  const newCount = ocrData.filter(i => i._status === 'new').length;
+  const existCount = ocrData.filter(i => i._status === 'exists').length;
+  document.getElementById('ocr-stats').textContent =
+    `${newCount} nouveau${newCount>1?'x':''} · ${existCount} déjà présent${existCount>1?'s':''}${supplier ? ' · ' + supplier : ''}`;
+
+  const container = document.getElementById('ocr-results-container');
+  container.innerHTML = ocrData.map(item => `
+    <div class="ocr-result-row" id="ocr-row-${item._id}">
+      <input type="checkbox" ${item._include ? 'checked' : ''} onchange="toggleOCRItem(${item._id}, this.checked)"
+        ${item._status === 'exists' ? '' : ''} style="width:16px;height:16px;accent-color:var(--forest);">
+      <input type="text" value="${escHtml(item.name)}" class="form-control" style="font-size:.85rem;"
+        onchange="updateOCRItem(${item._id}, 'name', this.value)">
+      <input type="number" value="${item.priceUC || ''}" placeholder="Prix UC" class="form-control mono"
+        style="font-size:.85rem;" onchange="updateOCRItem(${item._id}, 'priceUC', parseFloat(this.value)||0)">
+      <input type="text" value="${escHtml(item._supplier || '')}" placeholder="Fournisseur" class="form-control"
+        style="font-size:.85rem;" onchange="updateOCRItem(${item._id}, '_supplier', this.value)">
+      <span><span class="badge ${item._status==='new'?'badge-new':'badge-exists'}">${item._status==='new'?'Nouveau':'Existant'}</span></span>
+    </div>`).join('');
+}
+
+window.toggleOCRItem = (id, checked) => {
+  const item = ocrData.find(i => i._id === id);
+  if (item) item._include = checked;
+};
+window.updateOCRItem = (id, field, value) => {
+  const item = ocrData.find(i => i._id === id);
+  if (item) item[field] = value;
+};
+
+document.getElementById('btn-confirm-ocr').addEventListener('click', async () => {
+  const toProcess = ocrData.filter(i => i._include);
+  if (!toProcess.length) { toast('Aucun article sélectionné', 'warning'); return; }
+
+  let added = 0;
+  for (const item of toProcess) {
+    if (item._status !== 'new') continue;
+    try {
+      await addDoc(collection(db, 'articles'), {
+        name: item.name,
+        category: 'FOOD',
+        uc: item.uc || '',
+        us: '',
+        ratio: 0,
+        priceUC: item.priceUC || 0,
+        supplier: item._supplier || '',
+        supplierCode: item.supplierCode || '',
+        barcode: item.barcode || '',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUser.email,
+      });
+      added++;
+    } catch (e) { console.error(e); }
+  }
+  toast(`${added} article${added>1?'s':''} ajouté${added>1?'s':''} depuis le bon de livraison`, 'success');
+  logActivity('database', `OCR bon de livraison : ${added} article(s) importé(s)`);
+  closeModal('modal-ocr');
+  resetOCR();
+});
+
+// ── Helpers ──────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Lecture fichier impossible'));
+    r.readAsDataURL(file);
+  });
+}
+</script>
+</body>
+</html>
