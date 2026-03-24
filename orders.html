@@ -670,11 +670,11 @@ window.sendByEmail = async function(orderId, supName, supEmail) {
   const items   = Array.isArray(supData) ? supData : (supData?.items || []);
   const date    = new Date().toLocaleDateString('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' });
 
-  const subject = `Commande SOLESTE — ${date}`;
+  const subject = `COMMANDE pour FLOREAL Le Panoramique`;
   const message =
     `Bonjour,\n\nVeuillez trouver ci-dessous notre commande du ${date} :\n\n` +
     items.map(i => `- ${i.name} | UC : ${i.uc||'—'} | Quantité : ${i.qty}`).join('\n') +
-    `\n\nCordialement,\nSOLESTE`;
+    `\n\nCordialement,\nFLOREAL Le Panoramique`;
 
   // ── Tentative envoi EmailJS ──────────────────────────────
   if (emailjsReady && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
@@ -682,6 +682,10 @@ window.sendByEmail = async function(orderId, supName, supEmail) {
       const btn = event?.target;
       if (btn) { btn.textContent = 'Envoi…'; btn.disabled = true; }
 
+      // Récupérer l'email de l'utilisateur connecté pour la copie
+      const senderEmail = currentUser?.email || '';
+
+      // Envoi au fournisseur
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email: supEmail,
         subject,
@@ -690,11 +694,22 @@ window.sendByEmail = async function(orderId, supName, supEmail) {
         order_date: date,
       });
 
-      toast(`✉ Email envoyé à ${supName} (${supEmail})`, 'success');
+      // Copie à l'utilisateur connecté
+      if (senderEmail) {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          to_email: senderEmail,
+          subject:  `[COPIE] ${subject} — ${supName}`,
+          message:  `Copie de la commande envoyée à ${supName} (${supEmail}) :\n\n${message}`,
+          supplier_name: supName,
+          order_date: date,
+        });
+      }
+
+      toast(`✉ Email envoyé à ${supName} + copie à ${senderEmail}`, 'success');
       setSupplierStatus(orderId, supName, 'sent');
       return;
     } catch (e) {
-      toast('Erreur EmailJS : ' + e.text + ' — Fallback mailto…', 'warning');
+      toast('Erreur EmailJS : ' + (e.text||e.message) + ' — Fallback mailto…', 'warning');
     }
   }
 
