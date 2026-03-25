@@ -153,8 +153,8 @@ function renderTable(year) {
   let hRow1 = '<tr><th class="col-label" rowspan="2">Indicateur</th>';
   let hRow2 = '<tr>';
   for (let m = 0; m < 12; m++) {
-    hRow1 += `<th colspan="3" class="month-group month-header">${MONTHS[m]}</th>`;
-    hRow2 += `<th class="col-T sub-header month-group">Budget</th><th class="col-A sub-header">Actual</th><th class="col-Y1 sub-header">Y-1</th>`;
+    hRow1 += `<th colspan="2" class="month-group month-header">${MONTHS[m]}</th>`;
+    hRow2 += `<th class="col-A sub-header month-group">Actual</th><th class="col-Y1 sub-header">Y-1</th>`;
   }
   thead.innerHTML = hRow1 + '</tr>' + hRow2 + '</tr>';
 
@@ -174,7 +174,21 @@ function renderTable(year) {
 
   let html = '';
   for (const sec of sections) {
-    html += `<tr class="section-header"><td colspan="${1 + 12*3}">${sec.label}</td></tr>`;
+    const defaultPct = sec.key === 'bev' ? 22 : 32;
+    html += `<tr class="section-header"><td colspan="${1 + 12*2}">${sec.label}</td></tr>`;
+    // Ligne % Budget cible
+    html += `<tr style="background:rgba(108,125,54,.08);">
+      <td class="col-label" style="font-weight:600;color:var(--olive);">% Budget cible</td>`;
+    for (let m2 = 0; m2 < 12; m2++) {
+      const key2 = docKey(year, m2);
+      const bPct = fcData[key2]?.[sec.key + '_budgetpct'] ?? defaultPct;
+      html += `<td colspan="2" class="month-group" style="text-align:center;background:rgba(108,125,54,.04);">
+        <input type="number" step="0.1" min="0" max="100" value="${bPct}"
+          style="width:55px;padding:2px 4px;border:1.5px solid var(--olive);border-radius:3px;text-align:center;font-family:var(--font-mono);font-size:.78rem;"
+          data-year="${year}" data-month="${m2}" data-bsec="${sec.key}" onchange="handleBudgetPct(this)"> %
+      </td>`;
+    }
+    html += `</tr>`;
     for (const f of fields) {
       const isAuto = f.type !== 'input';
       html += `<tr class="${isAuto ? 'auto-row' : ''}"><td class="col-label">${f.label}</td>`;
@@ -196,15 +210,13 @@ function renderTable(year) {
           html += `<td class="col-A"><input type="number" step="any" min="0" value="${aVal}" data-year="${year}" data-month="${m}" data-section="${sec.key}" data-field="${f.field}" onchange="handleInput(this)"></td>`;
           html += `<td class="col-Y1">${y1Val !== undefined ? fmtEur(y1Val) : '—'}</td>`;
         } else if (f.type === 'auto_eur') {
-          html += `<td class="col-T month-group"><span class="computed-val">${calcT.cost !== undefined ? fmtEur(calcT.cost) : '—'}</span></td>`;
-          html += `<td class="col-A"><span class="computed-val">${calc.cost !== undefined ? fmtEur(calc.cost) : '—'}</span></td>`;
+          html += `<td class="col-A month-group"><span class="computed-val">${calc.cost !== undefined ? fmtEur(calc.cost) : '—'}</span></td>`;
           html += `<td class="col-Y1">${calcY1.cost !== undefined ? fmtEur(calcY1.cost) : '—'}</td>`;
         } else if (f.type === 'auto_pct') {
           const color  = fcColor(calc.costPct,  sec.isBev);
           const colorT = fcColor(calcT.costPct, sec.isBev);
           const colorY1 = fcColor(calcY1.costPct, sec.isBev);
-          html += `<td class="col-T month-group"><span class="computed-val" style="color:${colorT}">${calcT.costPct !== null ? fmtPct(calcT.costPct) : '—'}</span></td>`;
-          html += `<td class="col-A"><span class="computed-val" style="color:${color};font-size:.9rem;">${calc.costPct !== null ? fmtPct(calc.costPct) : '—'}</span></td>`;
+          html += `<td class="col-A month-group"><span class="computed-val" style="color:${color};font-size:.9rem;">${calc.costPct !== null ? fmtPct(calc.costPct) : '—'}</span></td>`;
           html += `<td class="col-Y1"><span style="color:${colorY1}">${calcY1.costPct !== null ? fmtPct(calcY1.costPct) : '—'}</span></td>`;
         }
       }
@@ -219,6 +231,17 @@ function fcColor(v, isBev) {
   if (isBev) return v < 20 ? 'var(--success)' : v <= 24 ? 'var(--warning)' : 'var(--danger)';
   return v < 30 ? 'var(--success)' : v <= 33 ? 'var(--warning)' : 'var(--danger)';
 }
+
+window.handleBudgetPct = function(el) {
+  const year  = parseInt(el.dataset.year);
+  const month = parseInt(el.dataset.month);
+  const sec   = el.dataset.bsec;
+  const key   = docKey(year, month);
+  if (!fcData[key]) fcData[key] = {};
+  fcData[key][sec + '_budgetpct'] = parseFloat(el.value) || 0;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveMonth(year, month), 1200);
+};
 
 window.handleInput = function(el) {
   const { year, month, section, field } = el.dataset;
