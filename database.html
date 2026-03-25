@@ -13,6 +13,23 @@
     .ocr-result-row { display:grid; grid-template-columns:auto 2fr 1fr 1fr 1fr; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:.85rem; }
     .ocr-result-row input { padding:5px 9px; border:1.5px solid var(--border-dk); border-radius:var(--radius-sm); font-size:.85rem; width:100%; outline:none; }
     .ocr-result-row input:focus { border-color:var(--forest); }
+    /* Grille unifiée import */
+    .upr-grid { display:grid; grid-template-columns:32px 2.5fr 90px 80px 80px 60px 80px 1fr 100px 120px; gap:6px; align-items:center; }
+    .upr-header { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); padding:8px 0; border-bottom:2px solid var(--border-dk); }
+    .upr-row { padding:7px 0; border-bottom:1px solid var(--cream-dk); }
+    .upr-row.is-skip { opacity:.45; }
+    .upr-row.is-update { background:rgba(200,106,74,.04); }
+    .upr-row.is-missing { background:rgba(230,126,34,.06); }
+    .upr-input { padding:4px 7px; border:1.5px solid var(--border-dk); border-radius:var(--radius-sm); font-size:.78rem; width:100%; outline:none; font-family:var(--font-body); }
+    .upr-input:focus { border-color:var(--forest); }
+    .upr-select { padding:4px 6px; border:1.5px solid var(--border-dk); border-radius:var(--radius-sm); font-size:.75rem; width:100%; outline:none; cursor:pointer; font-family:var(--font-body); }
+    .upr-action-sel { padding:4px 6px; border-radius:var(--radius-sm); font-size:.75rem; font-weight:600; cursor:pointer; width:100%; border:1.5px solid; font-family:var(--font-body); }
+    .upr-action-sel.create  { border-color:var(--success); color:var(--success); background:rgba(39,174,96,.07); }
+    .upr-action-sel.update  { border-color:var(--clay); color:var(--clay); background:rgba(200,106,74,.07); }
+    .upr-action-sel.skip    { border-color:var(--muted); color:var(--muted); background:rgba(138,138,138,.07); }
+    .upr-bulk { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .upr-bulk button { font-size:.75rem; padding:4px 12px; border-radius:99px; border:1.5px solid var(--border-dk); cursor:pointer; background:white; font-family:var(--font-body); transition:var(--transition); }
+    .upr-bulk button:hover { background:var(--cream); }
     .badge-new    { background:rgba(39,174,96,.12); color:var(--success); }
     .badge-update { background:rgba(200,106,74,.12); color:var(--clay); }
     .badge-exists { background:rgba(138,138,138,.1); color:var(--muted); }
@@ -247,14 +264,21 @@
         </div>
       </div>
       <div id="import-preview" class="hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div style="font-size:.88rem;"><span id="import-new-count" class="badge badge-success">0 nouveau</span> <span id="import-update-count" class="badge badge-warning" style="margin-left:6px;">0 mise à jour</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:.82rem;">
+            <span id="import-new-count" class="badge badge-success">0 nouveau</span>
+            <span id="import-update-count" class="badge badge-warning" style="margin-left:6px;">0 mise à jour</span>
+            <span id="import-skip-count" class="badge badge-neutral" style="margin-left:6px;">0 ignoré</span>
+          </div>
           <button class="btn btn-ghost btn-sm" id="import-reset-btn">← Changer de fichier</button>
         </div>
-        <div class="import-preview-row" style="font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">
-          <span>Nom</span><span>Catégorie</span><span>Prix UC</span><span>Fournisseur</span><span>Statut</span>
+        <div class="upr-bulk">
+          <span style="font-size:.75rem;color:var(--muted);align-self:center;">Action groupée :</span>
+          <button onclick="setBulkAction('excel','create')">✅ Tout créer</button>
+          <button onclick="setBulkAction('excel','update')">🔄 Tout mettre à jour</button>
+          <button onclick="setBulkAction('excel','skip')">⏭ Tout ignorer</button>
         </div>
-        <div id="import-rows-container" style="max-height:300px;overflow-y:auto;"></div>
+        <div id="import-rows-container" style="max-height:360px;overflow-y:auto;"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -314,10 +338,16 @@
           </div>
           <button class="btn btn-ghost btn-sm" id="ocr-reset-btn">← Nouveau document</button>
         </div>
-        <div style="display:grid;grid-template-columns:32px 2fr 1fr 1fr 1fr 60px 1fr 1fr 80px;gap:8px;padding:8px 0;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);">
-          <span>✓</span><span>Nom article</span><span>Catégorie</span><span>UC</span><span>US</span><span>Ratio UC/US</span><span>Prix UC</span><span>Fournisseur</span><span>Statut</span>
+        <div class="upr-bulk">
+          <span style="font-size:.75rem;color:var(--muted);align-self:center;">Action groupée :</span>
+          <button onclick="setBulkAction('ocr','create')">✅ Tout créer</button>
+          <button onclick="setBulkAction('ocr','update')">🔄 Tout mettre à jour</button>
+          <button onclick="setBulkAction('ocr','skip')">⏭ Tout ignorer</button>
         </div>
-        <div id="ocr-results-container" style="max-height:350px;overflow-y:auto;"></div>
+        <div class="upr-grid upr-header">
+          <span>✓</span><span>Nom article</span><span>Catégorie</span><span>UC</span><span>US</span><span>Ratio</span><span>Prix UC</span><span>Fournisseur</span><span>Code art.</span><span>Action</span>
+        </div>
+        <div id="ocr-results-container" style="max-height:360px;overflow-y:auto;"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -665,16 +695,10 @@ async function handleImportFile(file) {
 
     document.getElementById('import-new-count').textContent    = `${newCount} nouveau${newCount>1?'x':''}`;
     document.getElementById('import-update-count').textContent = `${updateCount} mise${updateCount>1?'s':''} à jour`;
+    document.getElementById('import-skip-count').textContent   = '0 ignoré';
 
-    const container = document.getElementById('import-rows-container');
-    container.innerHTML = tagged.map((r, i) => `
-      <div class="import-preview-row ${r._status==='update'?'dup':''}">
-        <span>${escHtml(r.name)}</span>
-        <span>${escHtml(r.category)}</span>
-        <span class="mono">${formatCurrency(r.priceUC)}</span>
-        <span>${escHtml(r.supplier)}</span>
-        <span><span class="badge ${r._status==='new'?'badge-new':'badge-update'}">${r._status==='new'?'Nouveau':'Mise à jour'}</span></span>
-      </div>`).join('');
+    // Rendu unifié avec action par ligne
+    renderUnifiedRows('excel');
 
     document.getElementById('import-upload-zone').classList.add('hidden');
     document.getElementById('import-preview').classList.remove('hidden');
@@ -692,15 +716,17 @@ document.getElementById('btn-confirm-import').addEventListener('click', async ()
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;border-color:rgba(255,255,255,.3);border-top-color:white;"></span> Import en cours…';
 
-  let added = 0, updated = 0;
+  let added = 0, updated = 0, skipped = 0;
   for (const row of importData) {
-    const { _status, ...data } = row;
+    const action = row._action || (row._status === 'update' ? 'update' : 'create');
+    if (action === 'skip') { skipped++; continue; }
+    const { _status, _action, _matchId, ...data } = row;
     data.updatedAt = serverTimestamp();
     data.updatedBy = currentUser.email;
     try {
-      if (_status === 'update') {
-        const existing = allArticles.find(a => normalize(a.name) === normalize(data.name));
-        if (existing) { await updateDoc(doc(db, 'articles', existing.id), data); updated++; }
+      if (action === 'update') {
+        const existingId = _matchId || allArticles.find(a => normalize(a.name) === normalize(data.name))?.id;
+        if (existingId) { await updateDoc(doc(db, 'articles', existingId), { priceUC: data.priceUC, updatedAt: data.updatedAt, updatedBy: data.updatedBy }); updated++; }
       } else {
         data.createdAt = serverTimestamp();
         await addDoc(collection(db, 'articles'), data);
@@ -708,8 +734,8 @@ document.getElementById('btn-confirm-import').addEventListener('click', async ()
       }
     } catch (e) { console.error('Import row error', e); }
   }
-  toast(`Import terminé : ${added} ajouté${added>1?'s':''}, ${updated} mis à jour`, 'success');
-  logActivity('database', `Import Excel : ${added} ajouté(s), ${updated} mis à jour`);
+  toast(`Import : ${added} créé${added>1?'s':''}, ${updated} mis à jour, ${skipped} ignoré${skipped>1?'s':''}`, 'success');
+  logActivity('database', `Import Excel : ${added} créé(s), ${updated} mis à jour, ${skipped} ignoré(s)`);
   closeModal('modal-import');
   resetImport();
   btn.disabled = false;
@@ -992,71 +1018,203 @@ function renderOCRResults(supplier) {
   document.getElementById('ocr-stats').textContent =
     `${newCount} nouveau${newCount>1?'x':''} · ${existCount} déjà présent${existCount>1?'s':''}${supplier ? ' · ' + supplier : ''}`;
 
-  const container = document.getElementById('ocr-results-container');
-  const cats = ['FOOD','BEVERAGE','CLEANING','ONE WAY','OFFICE'];
-  container.innerHTML = ocrData.map(item => `
-    <div style="display:grid;grid-template-columns:32px 2fr 1fr 1fr 1fr 1fr 1fr 80px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--cream-dk);" id="ocr-row-${item._id}">
-      <input type="checkbox" ${item._include ? 'checked' : ''} onchange="toggleOCRItem(${item._id}, this.checked)"
-        style="width:16px;height:16px;accent-color:var(--forest);cursor:pointer;">
-      <input type="text" value="${escHtml(item.name)}" placeholder="Nom article" class="form-control" style="font-size:.82rem;padding:5px 8px;"
-        onchange="updateOCRItem(${item._id}, 'name', this.value)">
-      <select class="form-control" style="font-size:.82rem;padding:5px 8px;"
-        onchange="updateOCRItem(${item._id}, '_category', this.value)">
-        ${cats.map(c => `<option value="${c}" ${(item._category||'FOOD')===c?'selected':''}>${c}</option>`).join('')}
-      </select>
-      <input type="text" value="${escHtml(item.uc||'')}" placeholder="ex: carton" class="form-control" style="font-size:.82rem;padding:5px 8px;"
-        onchange="updateOCRItem(${item._id}, 'uc', this.value)">
-      <input type="text" value="${escHtml(item._us||'')}" placeholder="ex: bouteille" class="form-control" style="font-size:.82rem;padding:5px 8px;"
-        onchange="updateOCRItem(${item._id}, '_us', this.value)">
-      <input type="number" value="${item._ratio||1}" placeholder="1" min="0" step="0.01" class="form-control mono" style="font-size:.82rem;padding:5px 8px;" title="Nombre d'unités de stockage par unité de commande"
-        onchange="updateOCRItem(${item._id}, '_ratio', parseFloat(this.value)||1)">
-      <input type="number" value="${item.priceUC||''}" placeholder="0.00" class="form-control mono" style="font-size:.82rem;padding:5px 8px;"
-        onchange="updateOCRItem(${item._id}, 'priceUC', parseFloat(this.value)||0)">
-      <input type="text" value="${escHtml(item._supplier||'')}" placeholder="Fournisseur" class="form-control" style="font-size:.82rem;padding:5px 8px;"
-        onchange="updateOCRItem(${item._id}, '_supplier', this.value)">
-      <span style="text-align:center;"><span class="badge ${item._status==='new'?'badge-new':'badge-exists'}" style="font-size:.65rem;">${item._status==='new'?'Nouveau':'Existant'}</span></span>
-    </div>`).join('');
+  renderUnifiedRows('ocr');
 }
 
 window.toggleOCRItem = (id, checked) => {
   const item = ocrData.find(i => i._id === id);
-  if (item) item._include = checked;
+  if (item) { item._include = checked; updateActionFromInclude(item); }
 };
 window.updateOCRItem = (id, field, value) => {
   const item = ocrData.find(i => i._id === id);
   if (item) item[field] = value;
 };
+function updateActionFromInclude(item) {
+  if (!item._include) { item._action = 'skip'; }
+  else if (!item._action || item._action === 'skip') {
+    item._action = item._status === 'update' ? 'update' : 'create';
+  }
+}
 
 document.getElementById('btn-confirm-ocr').addEventListener('click', async () => {
-  const toProcess = ocrData.filter(i => i._include);
+  const toProcess = ocrData.filter(i => i._action !== 'skip');
   if (!toProcess.length) { toast('Aucun article sélectionné', 'warning'); return; }
 
-  let added = 0;
+  let added = 0, updated = 0, skipped = 0;
   for (const item of toProcess) {
-    if (item._status !== 'new') continue;
+    const action = item._action || (item._status === 'update' ? 'update' : 'create');
+    if (action === 'skip') { skipped++; continue; }
     try {
-      await addDoc(collection(db, 'articles'), {
-        name:         item.name,
-        category:     item._category || 'FOOD',
-        uc:           item.uc || '',
-        us:           item._us || '',
-        ratio:        item._ratio || 1,
-        priceUC:      item.priceUC || 0,
-        supplier:     item._supplier || '',
-        supplierCode: item.supplierCode || '',
-        barcode:      item.barcode || '',
-        createdAt:    serverTimestamp(),
-        updatedAt:    serverTimestamp(),
-        updatedBy:    currentUser.email,
-      });
-      added++;
+      if (action === 'update') {
+        const existingId = item._matchId || allArticles.find(a => normalize(a.name) === normalize(item.name))?.id;
+        if (existingId) {
+          await updateDoc(doc(db, 'articles', existingId), { priceUC: item.priceUC || 0, updatedAt: serverTimestamp(), updatedBy: currentUser.email });
+          updated++;
+        }
+      } else {
+        await addDoc(collection(db, 'articles'), {
+          name:         item.name,
+          category:     item._category || 'FOOD',
+          uc:           item.uc || '',
+          us:           item._us || '',
+          ratio:        item._ratio || 1,
+          priceUC:      item.priceUC || 0,
+          supplier:     item._supplier || '',
+          supplierCode: item.supplierCode || '',
+          barcode:      item.barcode || '',
+          createdAt:    serverTimestamp(),
+          updatedAt:    serverTimestamp(),
+          updatedBy:    currentUser.email,
+        });
+        added++;
+      }
     } catch (e) { console.error(e); }
   }
-  toast(`${added} article${added>1?'s':''} ajouté${added>1?'s':''} depuis le bon de livraison`, 'success');
-  logActivity('database', `OCR bon de livraison : ${added} article(s) importé(s)`);
+  toast(`OCR : ${added} créé${added>1?'s':''}, ${updated} mis à jour, ${skipped} ignoré${skipped>1?'s':''}`, 'success');
+  logActivity('database', `OCR bon de livraison : ${added} créé(s), ${updated} mis à jour`);
   closeModal('modal-ocr');
   resetOCR();
 });
+
+// ── Rendu unifié import/OCR ──────────────────────────────────
+const CATS = ['FOOD','BEVERAGE','CLEANING','ONE WAY','OFFICE'];
+
+function detectAction(item) {
+  // Cherche un article similaire (fuzzy sur le nom)
+  const match = allArticles.find(a =>
+    normalize(a.name) === normalize(item.name) ||
+    (a.name.length > 4 && item.name.length > 4 && (
+      normalize(a.name).includes(normalize(item.name.substring(0,6))) ||
+      normalize(item.name).includes(normalize(a.name.substring(0,6)))
+    ))
+  );
+  if (match) {
+    item._matchId  = match.id;
+    item._matchName = match.name;
+    item._status   = 'update';
+    item._action   = item._action || 'update';
+  } else {
+    item._status   = 'new';
+    item._action   = item._action || 'create';
+  }
+  return item;
+}
+
+function renderUnifiedRows(source) {
+  const data      = source === 'excel' ? importData : ocrData;
+  const container = document.getElementById(source === 'excel' ? 'import-rows-container' : 'ocr-results-container');
+
+  // Détecter les doublons pour tout le dataset
+  data.forEach(item => detectAction(item));
+
+  const newCount    = data.filter(i => i._action === 'create').length;
+  const updateCount = data.filter(i => i._action === 'update').length;
+  const skipCount   = data.filter(i => i._action === 'skip').length;
+
+  if (source === 'excel') {
+    document.getElementById('import-new-count').textContent    = `${newCount} à créer`;
+    document.getElementById('import-update-count').textContent = `${updateCount} à mettre à jour`;
+    document.getElementById('import-skip-count').textContent   = `${skipCount} ignoré${skipCount>1?'s':''}`;
+    document.getElementById('import-btn-label').textContent    = `Importer ${data.filter(i=>i._action!=='skip').length} article${data.filter(i=>i._action!=='skip').length>1?'s':''}`;
+  } else {
+    const newC = data.filter(i=>i._action==='create').length;
+    const updC = data.filter(i=>i._action==='update').length;
+    document.getElementById('ocr-stats').textContent =
+      `${newC} à créer · ${updC} à mettre à jour · ${skipCount} ignoré${skipCount>1?'s':''}` +
+      (data[0]?._supplier ? ` · ${data[0]._supplier}` : '');
+  }
+
+  // En-tête pour Excel (OCR a son propre header dans le HTML)
+  let header = '';
+  if (source === 'excel') {
+    header = `<div class="upr-grid upr-header">
+      <span></span><span>Nom article</span><span>Catégorie</span><span>UC</span><span>US</span><span>Ratio</span><span>Prix UC</span><span>Fournisseur</span><span>Code art.</span><span>Action</span>
+    </div>`;
+  }
+
+  container.innerHTML = header + data.map((item, idx) => {
+    const isSkip   = item._action === 'skip';
+    const isUpdate = item._action === 'update';
+    const rowCls   = isSkip ? 'is-skip' : isUpdate ? 'is-update' : '';
+    const nameField = source === 'excel'
+      ? `<span style="font-size:.82rem;font-weight:500;">${escHtml(item.name)}</span>${item._matchName ? `<br><span style="font-size:.68rem;color:var(--muted);">Similaire : ${escHtml(item._matchName)}</span>` : ''}`
+      : `<input type="text" class="upr-input" value="${escHtml(item.name)}" placeholder="Nom article" onchange="setItemField('${source}',${idx},'name',this.value)">`;
+
+    const actionSel = `<select class="upr-action-sel ${item._action}" onchange="setItemAction('${source}',${idx},this.value)">
+      <option value="create" ${item._action==='create'?'selected':''}>✅ Créer</option>
+      <option value="update" ${item._action==='update'?'selected':''}>🔄 Màj prix</option>
+      <option value="skip"   ${item._action==='skip'  ?'selected':''}>⏭ Ignorer</option>
+    </select>`;
+
+    const catField  = `<select class="upr-select" onchange="setItemField('${source}',${idx},'_category',this.value)">${CATS.map(c=>`<option value="${c}" ${(item._category||item.category||'FOOD')===c?'selected':''}>${c}</option>`).join('')}</select>`;
+    const ucField   = `<input type="text"   class="upr-input" value="${escHtml(item.uc||'')}"              placeholder="UC"    onchange="setItemField('${source}',${idx},'uc',this.value)">`;
+    const usField   = `<input type="text"   class="upr-input" value="${escHtml(item.us||item._us||'')}"    placeholder="US"    onchange="setItemField('${source}',${idx},'_us',this.value)">`;
+    const ratioFld  = `<input type="number" class="upr-input" value="${item.ratio||item._ratio||1}"         placeholder="1" step="0.01" min="0" onchange="setItemField('${source}',${idx},'ratio',parseFloat(this.value)||1)">`;
+    const priceFld  = `<input type="number" class="upr-input" value="${item.priceUC||''}"                   placeholder="0.00" step="0.01" min="0" onchange="setItemField('${source}',${idx},'priceUC',parseFloat(this.value)||0)">`;
+    const supField  = `<input type="text"   class="upr-input" value="${escHtml(item.supplier||item._supplier||'')}" placeholder="Fournisseur" onchange="setItemField('${source}',${idx},'supplier',this.value)">`;
+    const codeField = `<input type="text"   class="upr-input" value="${escHtml(item.supplierCode||'')}"     placeholder="Code" onchange="setItemField('${source}',${idx},'supplierCode',this.value)">`;
+
+    return `<div class="upr-grid upr-row ${rowCls}" id="upr-${source}-${idx}">
+      <span></span>
+      <div>${nameField}</div>
+      ${catField}${ucField}${usField}${ratioFld}${priceFld}${supField}${codeField}
+      ${actionSel}
+    </div>`;
+  }).join('');
+}
+
+window.setItemField = (source, idx, field, value) => {
+  const data = source === 'excel' ? importData : ocrData;
+  if (data[idx]) data[idx][field] = value;
+};
+
+window.setItemAction = (source, idx, action) => {
+  const data = source === 'excel' ? importData : ocrData;
+  if (!data[idx]) return;
+  data[idx]._action = action;
+  // Mettre à jour la classe visuelle
+  const row = document.getElementById(`upr-${source}-${idx}`);
+  if (row) {
+    row.classList.toggle('is-skip',   action === 'skip');
+    row.classList.toggle('is-update', action === 'update');
+    row.classList.remove('is-missing');
+  }
+  // Mettre à jour le style du select
+  const sel = row?.querySelector('.upr-action-sel');
+  if (sel) { sel.className = `upr-action-sel ${action}`; }
+  // Mettre à jour les compteurs
+  renderSummary(source);
+};
+
+function renderSummary(source) {
+  const data = source === 'excel' ? importData : ocrData;
+  const nc = data.filter(i=>i._action==='create').length;
+  const uc = data.filter(i=>i._action==='update').length;
+  const sc = data.filter(i=>i._action==='skip').length;
+  if (source === 'excel') {
+    document.getElementById('import-new-count').textContent    = `${nc} à créer`;
+    document.getElementById('import-update-count').textContent = `${uc} à mettre à jour`;
+    document.getElementById('import-skip-count').textContent   = `${sc} ignoré${sc>1?'s':''}`;
+    document.getElementById('import-btn-label').textContent    = `Importer ${nc+uc} article${nc+uc>1?'s':''}`;
+  } else {
+    document.getElementById('ocr-stats').textContent =
+      `${nc} à créer · ${uc} à mettre à jour · ${sc} ignoré${sc>1?'s':''}`;
+  }
+}
+
+window.setBulkAction = (source, action) => {
+  const data = source === 'excel' ? importData : ocrData;
+  data.forEach((item, idx) => {
+    item._action = action;
+    const row = document.getElementById(`upr-${source}-${idx}`);
+    if (row) {
+      row.className = `upr-grid upr-row${action==='skip'?' is-skip':action==='update'?' is-update':''}`;
+      const sel = row.querySelector('.upr-action-sel');
+      if (sel) { sel.className = `upr-action-sel ${action}`; sel.value = action; }
+    }
+  });
+  renderSummary(source);
+};
 
 // ── Helpers ──────────────────────────────────────────────────
 function escHtml(str) {
