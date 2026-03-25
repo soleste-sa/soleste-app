@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOLESTE — Résultats</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ── Tableau résultats ── */
+    .results-wrapper { overflow-x: auto; padding-bottom: 16px; }
+    .results-table {
+      border-collapse: collapse;
+      min-width: 1600px;
+      font-size: .78rem;
+      width: 100%;
+    }
+    .results-table th, .results-table td {
+      padding: 5px 7px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+      text-align: right;
+    }
+    .results-table th { background: var(--forest-dk); color: var(--cream); font-weight: 600; text-align: center; }
+    .results-table .col-label { text-align: left; background: var(--cream); font-weight: 500; min-width: 160px; position: sticky; left: 0; z-index: 2; border-right: 2px solid var(--border-dk); }
+    .results-table .section-header td { background: var(--forest); color: white; font-weight: 700; font-size: .8rem; letter-spacing: .06em; text-align: left; padding: 8px 10px; }
+    .results-table .auto-row td { background: rgba(16,86,91,.05); font-style: italic; }
+    .results-table .auto-row .col-label { font-style: normal; font-weight: 600; color: var(--forest); }
+    .results-table input[type=number] {
+      width: 72px; padding: 3px 5px;
+      border: 1px solid transparent; border-radius: 3px;
+      background: transparent; text-align: right;
+      font-family: var(--font-mono); font-size: .78rem;
+      color: var(--charcoal);
+    }
+    .results-table input[type=number]:focus { border-color: var(--forest); background: white; outline: none; }
+    .results-table .col-T  { background: rgba(108,125,54,.06); }
+    .results-table .col-A  { background: white; }
+    .results-table .col-C  { background: rgba(200,106,74,.06); }
+    .results-table .col-Y1 { background: rgba(138,138,138,.06); color: var(--muted); }
+    .results-table .month-group { border-left: 2px solid var(--border-dk); }
+    .month-header { background: var(--forest-dk) !important; color: var(--cream) !important; text-align: center !important; font-weight: 700 !important; }
+    .sub-header th { background: var(--cream-dk); color: var(--charcoal-lt); font-size: .68rem; font-weight: 600; }
+    .computed-val { font-weight: 600; font-family: var(--font-mono); }
+    .year-selector { display: flex; align-items: center; gap: 12px; }
+    .year-btn { width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--transition); }
+    .year-btn:hover { background:var(--forest);color:white;border-color:var(--forest); }
+    .year-display { font-family:var(--font-display);font-size:1.4rem;font-weight:600;color:var(--forest);min-width:60px;text-align:center; }
+    .saving-indicator { font-size:.75rem;color:var(--muted);opacity:0;transition:.3s; }
+    .saving-indicator.show { opacity:1; }
+  </style>
+</head>
+<body>
+<div class="app-layout">
+  <header class="app-header">
+    <div class="logo">SOL<span>ESTE</span></div>
+    <div class="header-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">–</div>
+        <span id="user-name">–</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Déconnexion
+      </button>
+    </div>
+  </header>
+  <nav class="app-sidebar">
+    <div class="nav-section">Navigation</div>
+    <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Tableau de bord</a>
+    <div class="nav-section">Modules</div>
+    <a href="database.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Base articles</a>
+    <a href="suppliers.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Fournisseurs</a>
+    <a href="orders.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Commandes</a>
+    <a href="menu.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Menu engineering</a>
+    <a href="inventory.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Inventaire</a>
+    <div class="nav-section">Analyse</div>
+    <a href="results.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Résultats</a>
+    <a href="staffcost.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Staff Cost</a>
+    <a href="foodcost.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2"/><path d="M18.5 15a2.5 2.5 0 010 5H21v3h-5v-3h2.5a2.5 2.5 0 000-5H16v-5h5v5h-2.5z"/></svg>Food Cost</a>
+    <div class="nav-section">Configuration</div>
+    <a href="settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>Réglages</a>
+  </nav>
+
+  <main class="app-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Résultats</div>
+        <div class="page-subtitle">Tableau de bord mensuel — ROOM · F&amp;B · GOP</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span class="saving-indicator" id="saving-ind">💾 Sauvegarde…</span>
+        <div class="year-selector">
+          <button class="year-btn" id="btn-prev-year">‹</button>
+          <div class="year-display" id="year-display">2026</div>
+          <button class="year-btn" id="btn-next-year">›</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-wrapper">
+      <table class="results-table" id="results-table">
+        <thead id="results-thead"></thead>
+        <tbody id="results-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+<div id="toast-container"></div>
+
+<script type="module">
+import { auth, db } from './js/firebase.js';
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { toast } from './js/utils.js';
+import { MONTHS, docKey, fmtEur, fmtPct, fmtNum, calcRoom, calcFnb } from './js/kpi.js';
+
+window.signOut = signOut;
+let currentYear = new Date().getFullYear();
+let yearData    = {}; // { "2026_01": {...}, ... }
+let corrData    = {}; // staff cost corrigé
+let saveTimer   = null;
+
+// ── Auth ─────────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  const dn = user.displayName || user.email.split('@')[0];
+  document.getElementById('user-avatar').textContent = dn.substring(0,2).toUpperCase();
+  document.getElementById('user-name').textContent   = dn;
+  await loadYear(currentYear);
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await signOut(auth); window.location.href = 'index.html';
+});
+
+// ── Année ─────────────────────────────────────────────────────
+document.getElementById('btn-prev-year').addEventListener('click', () => { currentYear--; loadYear(currentYear); });
+document.getElementById('btn-next-year').addEventListener('click', () => { currentYear++; loadYear(currentYear); });
+
+async function loadYear(year) {
+  document.getElementById('year-display').textContent = year;
+  yearData = {}; corrData = {};
+  for (let m = 0; m < 12; m++) {
+    const key = docKey(year, m);
+    const [res, sc] = await Promise.all([
+      getDoc(doc(db, 'results', key)).then(s => s.exists() ? s.data() : {}).catch(() => ({})),
+      getDoc(doc(db, 'staffcost', key)).then(s => s.exists() ? s.data() : {}).catch(() => ({})),
+    ]);
+    yearData[key] = res;
+    corrData[key] = sc;
+  }
+  renderTable(year);
+}
+
+// ── Rendu tableau ──────────────────────────────────────────
+function renderTable(year) {
+  const thead = document.getElementById('results-thead');
+  const tbody = document.getElementById('results-tbody');
+
+  // En-tête mois
+  let hRow1 = '<tr><th class="col-label" rowspan="2">Indicateur</th>';
+  let hRow2 = '<tr>';
+  for (let m = 0; m < 12; m++) {
+    hRow1 += `<th colspan="4" class="month-group month-header">${MONTHS[m]}</th>`;
+    hRow2 += `<th class="col-T sub-header month-group">Budget</th><th class="col-A sub-header">Actual</th><th class="col-C sub-header">Corrigé</th><th class="col-Y1 sub-header">Y-1</th>`;
+  }
+  thead.innerHTML = hRow1 + '</tr>' + hRow2 + '</tr>';
+
+  // Corps
+  const rows = buildRows(year);
+  tbody.innerHTML = rows.map(r => renderRow(r, year)).join('');
+}
+
+// ── Définition des lignes ──────────────────────────────────
+function buildRows(year) {
+  const rows = [];
+
+  // ── ROOM ──
+  rows.push({ type: 'section', label: '🏨 ROOM' });
+  rows.push({ type: 'input', section: 'room', field: 'incomes',       label: 'Incomes (CA total hôtel)', fmt: 'eur' });
+  rows.push({ type: 'input', section: 'room', field: 'payrollFixed',  label: 'Payroll fixe', fmt: 'eur' });
+  rows.push({ type: 'input', section: 'room', field: 'payrollVar',    label: 'Payroll variable', fmt: 'eur' });
+  rows.push({ type: 'input', section: 'room', field: 'interim',       label: 'Intérim', fmt: 'eur' });
+  rows.push({ type: 'auto',  section: 'room', field: 'staffCostPct',  label: 'Staff cost %', fmt: 'pct', colorFn: 'staffcost' });
+  rows.push({ type: 'input', section: 'room', field: 'roomRevenue',   label: 'CA chambres uniquement', fmt: 'eur' });
+  rows.push({ type: 'input', section: 'room', field: 'roomsSold',     label: 'Chambres louées', fmt: 'num' });
+  rows.push({ type: 'input', section: 'room', field: 'roomsAvail',    label: 'Chambres disponibles', fmt: 'num' });
+  rows.push({ type: 'auto',  section: 'room', field: 'arr',           label: 'ARR', fmt: 'eur2' });
+  rows.push({ type: 'auto',  section: 'room', field: 'revpar',        label: 'RevPAR', fmt: 'eur2' });
+  rows.push({ type: 'auto',  section: 'room', field: 'occupancy',     label: "Taux d'occupation", fmt: 'pct' });
+
+  // ── F&B ──
+  rows.push({ type: 'section', label: '🍽 F&B' });
+  rows.push({ type: 'input', section: 'fnb', field: 'incomes',       label: 'Incomes', fmt: 'eur' });
+  rows.push({ type: 'input', section: 'fnb', field: 'payrollFixed',  label: 'Payroll fixe', fmt: 'eur' });
+  rows.push({ type: 'input', section: 'fnb', field: 'payrollVar',    label: 'Payroll variable', fmt: 'eur' });
+  rows.push({ type: 'input', section: 'fnb', field: 'interim',       label: 'Intérim', fmt: 'eur' });
+  rows.push({ type: 'auto',  section: 'fnb', field: 'staffCostPct',  label: 'Staff cost %', fmt: 'pct', colorFn: 'staffcost' });
+
+  // ── GOP ──
+  rows.push({ type: 'section', label: '📊 GOP' });
+  rows.push({ type: 'input', section: 'gop', field: 'gop', label: 'GOP (€)', fmt: 'eur' });
+
+  return rows;
+}
+
+function renderRow(row, year) {
+  if (row.type === 'section') {
+    return `<tr class="section-header"><td colspan="${1 + 12*4}">${row.label}</td></tr>`;
+  }
+
+  let cells = `<td class="col-label">${row.label}</td>`;
+
+  for (let m = 0; m < 12; m++) {
+    const key   = docKey(year, m);
+    const key1  = docKey(year - 1, m);
+    const d     = yearData[key]?.[row.section] || {};
+    const dT    = yearData[key]?.[row.section + '_target'] || {};
+    const dY1   = {}; // Y-1 sera chargé à part — on affiche — pour l'instant
+    const sc    = corrData[key] || {};
+
+    if (row.type === 'input') {
+      // Budget (Target)
+      const tVal = dT[row.field] ?? '';
+      cells += `<td class="col-T month-group"><input type="number" step="any" value="${tVal}" data-year="${year}" data-month="${m}" data-section="${row.section}_target" data-field="${row.field}" onchange="handleInput(this)"></td>`;
+      // Actual
+      const aVal = d[row.field] ?? '';
+      cells += `<td class="col-A"><input type="number" step="any" value="${aVal}" data-year="${year}" data-month="${m}" data-section="${row.section}" data-field="${row.field}" onchange="handleInput(this)"></td>`;
+      // Corrigé (lecture seule — calculé depuis staffcost)
+      const corrVal = getCorrectedValue(sc, row.section, row.field, d);
+      cells += `<td class="col-C"><span class="computed-val">${corrVal !== null ? corrVal : '—'}</span></td>`;
+      // Y-1 (lecture seule)
+      cells += `<td class="col-Y1" data-y1-key="${docKey(year-1,m)}" data-y1-section="${row.section}" data-y1-field="${row.field}">—</td>`;
+    } else {
+      // Auto-calculé
+      const calcA = getAutoValue(d, row.section, row.field);
+      const calcT = getAutoValue(dT, row.section, row.field);
+      const corrSc = getCorrectedCalcValue(sc, row.section, row.field, d);
+      const color = row.colorFn === 'staffcost' ? staffCostColorLocal(calcA) : '';
+      cells += `<td class="col-T month-group auto-row"><span class="computed-val">${fmt(calcT, row.fmt)}</span></td>`;
+      cells += `<td class="col-A auto-row"><span class="computed-val" style="color:${color}">${fmt(calcA, row.fmt)}</span></td>`;
+      cells += `<td class="col-C auto-row"><span class="computed-val">${corrSc !== null ? fmt(corrSc, row.fmt) : '—'}</span></td>`;
+      cells += `<td class="col-Y1 auto-row" data-y1-key="${docKey(year-1,m)}" data-y1-section="${row.section}" data-y1-field="${row.field}_auto">—</td>`;
+    }
+  }
+
+  const cls = row.type === 'auto' ? 'auto-row' : '';
+  return `<tr class="${cls}">${cells}</tr>`;
+}
+
+// ── Valeur calculée ────────────────────────────────────────
+function getAutoValue(d, section, field) {
+  if (!d || !Object.keys(d).length) return null;
+  if (section === 'room') {
+    const c = calcRoom(d);
+    return c[field] ?? null;
+  }
+  if (section === 'fnb') {
+    const c = calcFnb(d);
+    return c[field] ?? null;
+  }
+  return null;
+}
+
+function getCorrectedValue(sc, section, field, actual) {
+  // Retourne la valeur corrigée pour les champs de payroll
+  if (!sc[section]) return null;
+  const corr = sc[section];
+  if (field === 'payrollFixed') return corr.payrollFixed ?? actual[field] ?? null;
+  if (field === 'payrollVar')   return corr.payrollVar   ?? actual[field] ?? null;
+  if (field === 'interim')      return corr.interim       ?? actual[field] ?? null;
+  return null;
+}
+
+function getCorrectedCalcValue(sc, section, field, actual) {
+  if (!sc[section]) return null;
+  const corrD = {
+    ...actual,
+    payrollFixed: sc[section]?.payrollFixed ?? actual?.payrollFixed,
+    payrollVar:   sc[section]?.payrollVar   ?? actual?.payrollVar,
+    interim:      sc[section]?.interim       ?? actual?.interim,
+  };
+  return getAutoValue(corrD, section, field);
+}
+
+function staffCostColorLocal(v) {
+  if (v === null || v === undefined) return 'inherit';
+  return v < 30 ? 'var(--success)' : v < 40 ? 'var(--warning)' : 'var(--danger)';
+}
+
+function fmt(v, type) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  if (type === 'eur')  return fmtEur(v, 0);
+  if (type === 'eur2') return fmtEur(v, 2);
+  if (type === 'pct')  return fmtPct(v);
+  if (type === 'num')  return fmtNum(v, 0);
+  return v;
+}
+
+// ── Sauvegarde auto ────────────────────────────────────────
+window.handleInput = function(el) {
+  const { year, month, section, field } = el.dataset;
+  const key = docKey(parseInt(year), parseInt(month));
+  if (!yearData[key]) yearData[key] = {};
+  if (!yearData[key][section]) yearData[key][section] = {};
+  yearData[key][section][field] = parseFloat(el.value) || 0;
+
+  // Rafraîchir les calculs auto dans la même colonne
+  refreshAutoRow(parseInt(year), parseInt(month), section);
+
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveMonth(parseInt(year), parseInt(month)), 1200);
+};
+
+function refreshAutoRow(year, month, section) {
+  const key = docKey(year, month);
+  const d = yearData[key]?.[section] || {};
+  const dT = yearData[key]?.[section + '_target'] || {};
+  // Mettre à jour les cellules auto de cette colonne
+  document.querySelectorAll(`[data-year="${year}"][data-month="${month}"]`).forEach(el => {
+    const col = el.closest('td');
+    if (!col) return;
+    const row = col.parentElement;
+    if (!row.classList.contains('auto-row')) return;
+  });
+  // Reconstruire les lignes auto — plus simple
+  renderTable(year);
+}
+
+async function saveMonth(year, month) {
+  const key = docKey(year, month);
+  const ind = document.getElementById('saving-ind');
+  ind.classList.add('show');
+  try {
+    await setDoc(doc(db, 'results', key), {
+      ...yearData[key],
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (e) { toast('Erreur sauvegarde', 'error'); }
+  finally { setTimeout(() => ind.classList.remove('show'), 1500); }
+}
+
+// ── Charger Y-1 après le rendu (optimisation) ─────────────
+async function loadY1Data(year) {
+  const y1Data = {};
+  for (let m = 0; m < 12; m++) {
+    const k = docKey(year-1, m);
+    y1Data[k] = await getDoc(doc(db, 'results', k)).then(s => s.exists() ? s.data() : {}).catch(() => ({}));
+  }
+  // Mettre à jour les cellules Y-1
+  document.querySelectorAll('[data-y1-key]').forEach(td => {
+    const { y1Key, y1Section, y1Field } = td.dataset;
+    const d = y1Data[y1Key]?.[y1Section] || {};
+    let val = null;
+    if (y1Field.endsWith('_auto')) {
+      const realField = y1Field.replace('_auto','');
+      const c = y1Section === 'room' ? calcRoom(d) : y1Section === 'fnb' ? calcFnb(d) : {};
+      val = c[realField];
+    } else {
+      val = d[y1Field];
+    }
+    if (val !== null && val !== undefined && !isNaN(val)) {
+      td.textContent = typeof val === 'number' && val > 100 ? fmtEur(val, 0) : val < 1 ? fmtPct(val*100) : fmtNum(val, 0);
+    }
+  });
+}
+</script>
+</body>
+</html>

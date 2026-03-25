@@ -5,141 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOLESTE — Tableau de bord</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
-    .welcome-banner {
-      background: linear-gradient(135deg, var(--forest-dk) 0%, var(--forest) 100%);
-      border-radius: var(--radius-xl);
-      padding: 28px 32px;
-      color: var(--cream);
-      margin-bottom: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: relative;
-      overflow: hidden;
-    }
-    .welcome-banner::before {
-      content: '';
-      position: absolute;
-      right: -40px;
-      top: -40px;
-      width: 220px;
-      height: 220px;
-      border-radius: 50%;
-      background: rgba(200,106,74,.15);
-    }
-    .welcome-banner::after {
-      content: '';
-      position: absolute;
-      right: 60px;
-      bottom: -60px;
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      background: rgba(108,125,54,.12);
-    }
-    .welcome-text h2 { font-family: var(--font-display); font-size: 1.6rem; color: var(--cream); margin-bottom: 6px; }
-    .welcome-text p  { color: rgba(245,240,232,.6); font-size: .88rem; }
-    .welcome-icon {
-      width: 64px; height: 64px;
-      background: rgba(245,240,232,.1);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      position: relative; z-index: 1;
-    }
-    .welcome-icon svg { width: 32px; height: 32px; color: var(--clay); }
-
-    .module-cards {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      margin-bottom: 28px;
-    }
-    .module-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
-      padding: 24px;
-      cursor: pointer;
-      transition: var(--transition);
-      text-decoration: none;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      position: relative;
-      overflow: hidden;
-    }
-    .module-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 4px;
-    }
-    .module-card.mod-db::before   { background: var(--forest); }
-    .module-card.mod-menu::before { background: var(--clay); }
-    .module-card.mod-inv::before  { background: var(--olive); }
-    .module-card:hover {
-      box-shadow: var(--shadow);
-      transform: translateY(-2px);
-      border-color: var(--border-dk);
-    }
-    .module-card .mod-icon {
-      width: 48px; height: 48px;
-      border-radius: var(--radius-lg);
-      display: flex; align-items: center; justify-content: center;
-    }
-    .module-card.mod-db .mod-icon   { background: rgba(16,86,91,.1); color: var(--forest); }
-    .module-card.mod-menu .mod-icon { background: rgba(200,106,74,.1); color: var(--clay); }
-    .module-card.mod-inv .mod-icon  { background: rgba(108,125,54,.1); color: var(--olive); }
-    .mod-icon svg { width: 24px; height: 24px; }
-    .module-card h3 { font-size: 1.05rem; color: var(--charcoal); margin-bottom: 4px; }
-    .module-card p  { font-size: .82rem; color: var(--muted); line-height: 1.5; margin: 0; }
-    .mod-count {
-      margin-top: auto;
-      font-family: var(--font-mono);
-      font-size: .78rem;
-      color: var(--muted);
-      padding-top: 14px;
-      border-top: 1px solid var(--border);
-    }
-
-    .activity-list { list-style: none; }
-    .activity-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .activity-item:last-child { border-bottom: none; }
-    .activity-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--forest);
-      margin-top: 6px;
-      flex-shrink: 0;
-    }
-    .activity-dot.clay  { background: var(--clay); }
-    .activity-dot.olive { background: var(--olive); }
-    .activity-body { flex: 1; }
-    .activity-body .action { font-size: .87rem; color: var(--charcoal); }
-    .activity-body .time   { font-size: .75rem; color: var(--muted); margin-top: 2px; }
-
-    @media (max-width: 900px) {
-      .module-cards { grid-template-columns: 1fr; }
-    }
+    .welcome-banner { background:linear-gradient(135deg,var(--forest-dk) 0%,var(--forest) 100%); border-radius:var(--radius-xl); padding:24px 32px; color:var(--cream); margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden; }
+    .welcome-banner::before { content:''; position:absolute; right:-40px; top:-40px; width:200px; height:200px; border-radius:50%; background:rgba(200,106,74,.15); }
+    .welcome-text h2 { font-family:var(--font-display); font-size:1.4rem; color:var(--cream); margin-bottom:4px; }
+    .welcome-text p  { color:rgba(245,240,232,.6); font-size:.85rem; }
+    .stat-chips { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+    .stat-chip { background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px 18px; min-width:110px; }
+    .stat-chip .chip-val { font-family:var(--font-display); font-size:1.5rem; font-weight:600; color:var(--forest); }
+    .stat-chip .chip-label { font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+    .module-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+    .module-card { background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; cursor:pointer; transition:var(--transition); text-decoration:none; display:flex; align-items:center; gap:10px; position:relative; overflow:hidden; }
+    .module-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+    .module-card.mod-db::before   { background:var(--forest); }
+    .module-card.mod-menu::before { background:var(--clay); }
+    .module-card.mod-inv::before  { background:var(--olive); }
+    .module-card.mod-ord::before  { background:var(--forest-lt); }
+    .module-card:hover { box-shadow:var(--shadow); transform:translateY(-1px); }
+    .mod-icon { width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+    .mod-icon svg { width:18px;height:18px; }
+    .mod-db   .mod-icon { background:rgba(16,86,91,.1);  color:var(--forest); }
+    .mod-menu .mod-icon { background:rgba(200,106,74,.1); color:var(--clay); }
+    .mod-inv  .mod-icon { background:rgba(108,125,54,.1); color:var(--olive); }
+    .mod-ord  .mod-icon { background:rgba(26,122,130,.1); color:var(--forest-lt); }
+    .module-card h3 { font-size:.85rem; color:var(--charcoal); margin:0; }
+    .module-card small { font-size:.7rem; color:var(--muted); font-family:var(--font-mono); }
+    .kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+    .kpi-section-title { font-family:var(--font-display); font-size:.95rem; font-weight:600; color:var(--forest); margin-bottom:10px; }
+    .kpi-section-title span { font-size:.72rem; font-weight:400; color:var(--muted); font-family:var(--font-body); }
+    .kpi-table { width:100%; border-collapse:collapse; font-size:.78rem; }
+    .kpi-table th { padding:6px 10px; background:var(--forest-dk); color:var(--cream); font-weight:600; text-align:center; font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; }
+    .kpi-table th.lbl { text-align:left; background:var(--forest); min-width:130px; }
+    .kpi-table td { padding:6px 10px; border-bottom:1px solid var(--border); text-align:right; font-family:var(--font-mono); font-size:.78rem; }
+    .kpi-table td.lbl { text-align:left; font-family:var(--font-body); color:var(--charcoal-lt); }
+    .kpi-table tr:hover td { background:var(--cream); }
+    .kpi-table .sec-row td { background:rgba(16,86,91,.06); font-weight:600; font-family:var(--font-body); color:var(--forest); font-size:.74rem; text-align:left; letter-spacing:.04em; }
+    .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .chart-card { background:white; border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; }
+    .chart-title { font-family:var(--font-display); font-size:.88rem; color:var(--forest); margin-bottom:12px; font-weight:600; }
   </style>
 </head>
 <body>
 <div class="app-layout">
-
-  <!-- Header -->
   <header class="app-header">
     <div class="logo">SOL<span>ESTE</span></div>
     <div class="header-right">
       <div class="user-badge">
         <div class="user-avatar" id="user-avatar">–</div>
-        <span id="user-name">Chargement…</span>
+        <span id="user-name">–</span>
       </div>
       <button class="btn btn-ghost btn-sm" id="logout-btn" style="color:rgba(245,240,232,.7);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -147,236 +61,309 @@
       </button>
     </div>
   </header>
-
-  <!-- Sidebar -->
   <nav class="app-sidebar">
     <div class="nav-section">Navigation</div>
-    <a href="dashboard.html" class="nav-item active">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      Tableau de bord
-    </a>
+    <a href="dashboard.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Tableau de bord</a>
     <div class="nav-section">Modules</div>
-    <a href="database.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-      Base articles
-    </a>
-    <a href="suppliers.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      Fournisseurs
-    </a>
-    <a href="orders.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-      Commandes
-    </a>
-    <a href="menu.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-      Menu engineering
-    </a>
-    <a href="inventory.html" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      Inventaire
-    </a>
+    <a href="database.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Base articles</a>
+    <a href="suppliers.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Fournisseurs</a>
+    <a href="orders.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>Commandes</a>
+    <a href="menu.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Menu engineering</a>
+    <a href="inventory.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Inventaire</a>
+    <div class="nav-section">Analyse</div>
+    <a href="results.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Résultats</a>
+    <a href="staffcost.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Staff Cost</a>
+    <a href="foodcost.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2"/></svg>Food Cost</a>
     <div class="nav-section">Configuration</div>
-    <a href="settings.html" class="nav-item"">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
-      Réglages
-    </a>
+    <a href="settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>Réglages</a>
   </nav>
 
-  <!-- Main -->
   <main class="app-main">
-
-    <!-- Welcome Banner -->
     <div class="welcome-banner">
       <div class="welcome-text">
         <h2>Bonjour, <span id="welcome-name">–</span> 👋</h2>
-        <p id="welcome-date">Chargement de la date…</p>
+        <p id="welcome-date">–</p>
       </div>
-      <div class="welcome-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stat-grid" id="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon forest">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-        </div>
-        <div class="stat-label">Articles</div>
-        <div class="stat-value" id="stat-articles">–</div>
-        <div class="stat-sub">dans la base</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon clay">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </div>
-        <div class="stat-label">Recettes</div>
-        <div class="stat-value" id="stat-recipes">–</div>
-        <div class="stat-sub">fiches actives</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon olive">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-        </div>
-        <div class="stat-label">Inventaires</div>
-        <div class="stat-value" id="stat-inventories">–</div>
-        <div class="stat-sub">réalisés</div>
+      <div style="position:relative;z-index:1;text-align:right;">
+        <div style="font-size:.68rem;color:rgba(245,240,232,.5);text-transform:uppercase;letter-spacing:.08em;">Analyse</div>
+        <div id="prev-month-label" style="font-family:var(--font-display);font-size:1rem;color:var(--cream);">–</div>
       </div>
     </div>
 
-    <!-- Module Cards -->
+    <div class="stat-chips">
+      <div class="stat-chip"><div class="chip-val" id="stat-articles">–</div><div class="chip-label">Articles</div></div>
+      <div class="stat-chip"><div class="chip-val" id="stat-recipes">–</div><div class="chip-label">Recettes</div></div>
+      <div class="stat-chip"><div class="chip-val" id="stat-inventories">–</div><div class="chip-label">Inventaires</div></div>
+      <div class="stat-chip"><div class="chip-val" id="stat-orders">–</div><div class="chip-label">Commandes</div></div>
+    </div>
+
     <div class="module-cards">
-      <a href="database.html" class="module-card mod-db">
-        <div class="mod-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-        </div>
-        <div>
-          <h3>Base articles</h3>
-          <p>Gérez vos produits, fournisseurs, prix et unités. Import Excel et lecture OCR de bons de livraison.</p>
-        </div>
-        <div class="mod-count" id="db-count">Chargement…</div>
-      </a>
-      <a href="menu.html" class="module-card mod-menu">
-        <div class="mod-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        </div>
-        <div>
-          <h3>Menu engineering</h3>
-          <p>Créez vos fiches recettes, calculez automatiquement food cost, marges brutes et nettes.</p>
-        </div>
-        <div class="mod-count" id="menu-count">Chargement…</div>
-      </a>
-      <a href="inventory.html" class="module-card mod-inv">
-        <div class="mod-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-        </div>
-        <div>
-          <h3>Inventaire</h3>
-          <p>Réalisez des inventaires par place avec scan code-barre. Historique complet et export PDF/Excel.</p>
-        </div>
-        <div class="mod-count" id="inv-count">Chargement…</div>
-      </a>
+      <a href="database.html" class="module-card mod-db"><div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div><div><h3>Base articles</h3><small id="db-count">–</small></div></a>
+      <a href="menu.html" class="module-card mod-menu"><div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><h3>Menu engineering</h3><small id="menu-count">–</small></div></a>
+      <a href="inventory.html" class="module-card mod-inv"><div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><div><h3>Inventaire</h3><small id="inv-count">–</small></div></a>
+      <a href="orders.html" class="module-card mod-ord"><div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg></div><div><h3>Commandes</h3><small id="ord-count">–</small></div></a>
     </div>
 
-    <!-- Bottom Grid -->
-    <div class="grid-2">
+    <!-- KPI Tables -->
+    <div class="kpi-grid">
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">Activité récente</span>
-        </div>
-        <ul class="activity-list" id="activity-list">
-          <li class="activity-item">
-            <div class="activity-dot"></div>
-            <div class="activity-body">
-              <div class="action" style="color:var(--muted);font-style:italic;">Aucune activité récente</div>
-            </div>
-          </li>
-        </ul>
+        <div class="kpi-section-title">📅 Mois précédent <span id="kpi-month-label"></span></div>
+        <table class="kpi-table"><thead><tr><th class="lbl">Indicateur</th><th>Target</th><th>Actual</th><th>Corrigé</th><th>Y-1</th></tr></thead>
+        <tbody id="kpi-month-body"><tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);">Chargement…</td></tr></tbody></table>
       </div>
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">Accès rapide</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <a href="database.html?action=new" class="btn btn-secondary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Ajouter un article
-          </a>
-          <a href="menu.html?action=new" class="btn btn-secondary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Créer une fiche recette
-          </a>
-          <a href="inventory.html?action=new" class="btn btn-secondary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Démarrer un inventaire
-          </a>
-          <a href="database.html?action=ocr" class="btn btn-secondary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3L14.5 4z"/><circle cx="12" cy="13" r="3"/></svg>
-            Lire un bon de livraison
-          </a>
-          <a href="settings.html" class="btn btn-secondary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
-            Gérer les places &amp; utilisateurs
-          </a>
-        </div>
+        <div class="kpi-section-title">📊 YTD <span id="kpi-ytd-label"></span></div>
+        <table class="kpi-table"><thead><tr><th class="lbl">Indicateur</th><th>Target</th><th>Actual</th><th>Corrigé</th><th>Y-1</th></tr></thead>
+        <tbody id="kpi-ytd-body"><tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);">Chargement…</td></tr></tbody></table>
       </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="card">
+        <div class="kpi-section-title">🥗 Food Cost — Mois précédent</div>
+        <table class="kpi-table"><thead><tr><th class="lbl">Indicateur</th><th>Target</th><th>Actual</th><th>Y-1</th></tr></thead>
+        <tbody id="kpi-fc-month"><tr><td colspan="4" style="text-align:center;padding:12px;color:var(--muted);">Chargement…</td></tr></tbody></table>
+      </div>
+      <div class="card">
+        <div class="kpi-section-title">🥗 Food Cost — YTD</div>
+        <table class="kpi-table"><thead><tr><th class="lbl">Indicateur</th><th>Target</th><th>Actual</th><th>Y-1</th></tr></thead>
+        <tbody id="kpi-fc-ytd"><tr><td colspan="4" style="text-align:center;padding:12px;color:var(--muted);">Chargement…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title">📈 Incomes ROOM + F&B (Actual vs Target)</div><canvas id="chart-incomes" height="160"></canvas></div>
+      <div class="chart-card"><div class="chart-title">👥 Staff cost % (Actual vs Corrigé vs Target)</div><canvas id="chart-staffcost" height="160"></canvas></div>
+      <div class="chart-card"><div class="chart-title">🏨 ARR · RevPAR · Taux d'occupation</div><canvas id="chart-room-kpis" height="160"></canvas></div>
+      <div class="chart-card"><div class="chart-title">🥗 Food & Bev cost % (Actual vs Target)</div><canvas id="chart-foodcost" height="160"></canvas></div>
     </div>
   </main>
 </div>
-
 <div id="toast-container"></div>
 
 <script type="module">
 import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { collection, getCountFromServer, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { toast, formatDateTime } from './js/utils.js';
+import { collection, getCountFromServer, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { MONTHS, MONTHS_FULL, docKey, fmtEur, fmtPct, fmtNum, calcRoom, calcFnb, calcStaffCostCorrection, calcFoodCost } from './js/kpi.js';
+import { getSettings } from './js/settings.js';
 
-// Auth guard
+let hourlyCost = 0;
+const charts = {};
+
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = 'index.html'; return; }
-
-  // Display user info
   const name = user.displayName || user.email.split('@')[0];
-  const initials = name.slice(0, 2).toUpperCase();
-  document.getElementById('user-name').textContent = name;
-  document.getElementById('user-avatar').textContent = initials;
+  document.getElementById('user-name').textContent    = name;
+  document.getElementById('user-avatar').textContent  = name.slice(0,2).toUpperCase();
   document.getElementById('welcome-name').textContent = name;
-
-  // Date
   const now = new Date();
   const days = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
-  const months = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-  document.getElementById('welcome-date').textContent =
-    `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  const mos  = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  document.getElementById('welcome-date').textContent = `${days[now.getDay()]} ${now.getDate()} ${mos[now.getMonth()]} ${now.getFullYear()}`;
+  const s = await getSettings().catch(() => ({}));
+  hourlyCost = parseFloat(s.hourlyCost) || 0;
+  await Promise.all([loadCounts(), loadKPIs(now)]);
+});
 
-  // Load counts
+document.getElementById('logout-btn').addEventListener('click', async () => { await signOut(auth); window.location.href = 'index.html'; });
+
+async function loadCounts() {
   try {
-    const [artSnap, recSnap, invSnap] = await Promise.all([
-      getCountFromServer(collection(db, 'articles')),
-      getCountFromServer(collection(db, 'recipes')),
-      getCountFromServer(collection(db, 'inventories')),
+    const [art,rec,inv,ord] = await Promise.all([
+      getCountFromServer(collection(db,'articles')),
+      getCountFromServer(collection(db,'recipes')),
+      getCountFromServer(collection(db,'inventories')),
+      getCountFromServer(collection(db,'orders')),
     ]);
-    const nArt = artSnap.data().count;
-    const nRec = recSnap.data().count;
-    const nInv = invSnap.data().count;
-    document.getElementById('stat-articles').textContent = nArt;
-    document.getElementById('stat-recipes').textContent  = nRec;
-    document.getElementById('stat-inventories').textContent = nInv;
-    document.getElementById('db-count').textContent   = `${nArt} article${nArt>1?'s':''}`;
-    document.getElementById('menu-count').textContent = `${nRec} fiche${nRec>1?'s':''} recette`;
-    document.getElementById('inv-count').textContent  = `${nInv} inventaire${nInv>1?'s':''}`;
+    const na=art.data().count, nr=rec.data().count, ni=inv.data().count, no=ord.data().count;
+    document.getElementById('stat-articles').textContent    = na;
+    document.getElementById('stat-recipes').textContent     = nr;
+    document.getElementById('stat-inventories').textContent = ni;
+    document.getElementById('stat-orders').textContent      = no;
+    document.getElementById('db-count').textContent   = `${na} article${na>1?'s':''}`;
+    document.getElementById('menu-count').textContent = `${nr} fiche${nr>1?'s':''}`;
+    document.getElementById('inv-count').textContent  = `${ni} inventaire${ni>1?'s':''}`;
+    document.getElementById('ord-count').textContent  = `${no} commande${no>1?'s':''}`;
   } catch {}
+}
 
-  // Activity log
-  try {
-    const logQ = query(collection(db, 'activityLog'), orderBy('createdAt', 'desc'), limit(5));
-    const logSnap = await getDocs(logQ);
-    if (!logSnap.empty) {
-      const list = document.getElementById('activity-list');
-      list.innerHTML = '';
-      logSnap.forEach(doc => {
-        const d = doc.data();
-        const dotCls = d.module === 'menu' ? 'clay' : d.module === 'inventory' ? 'olive' : '';
-        list.innerHTML += `
-          <li class="activity-item">
-            <div class="activity-dot ${dotCls}"></div>
-            <div class="activity-body">
-              <div class="action">${d.message}</div>
-              <div class="time">${formatDateTime(d.createdAt)} · ${d.user || ''}</div>
-            </div>
-          </li>`;
-      });
+async function getMonthDoc(col, year, month) {
+  return getDoc(doc(db, col, docKey(year, month))).then(d => d.exists() ? d.data() : {}).catch(() => ({}));
+}
+
+async function loadKPIs(now) {
+  const year = now.getFullYear();
+  const prevM = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevY = now.getMonth() === 0 ? year - 1 : year;
+  const ytdEnd = now.getMonth(); // 0 = janvier = ytd de 0 mois = on affiche le mois précédent
+
+  document.getElementById('prev-month-label').textContent = `${MONTHS_FULL[prevM]} ${prevY}`;
+  document.getElementById('kpi-month-label').textContent  = `${MONTHS_FULL[prevM]} ${prevY}`;
+  document.getElementById('kpi-ytd-label').textContent    = ytdEnd > 0 ? `Jan → ${MONTHS_FULL[prevM]} ${year}` : `${MONTHS_FULL[prevM]} ${prevY}`;
+
+  // ── Données mois précédent ──────────────────────────────
+  const [resM, scM, resM1, fcM, fcM1] = await Promise.all([
+    getMonthDoc('results',   prevY,   prevM),
+    getMonthDoc('staffcost', prevY,   prevM),
+    getMonthDoc('results',   prevY-1, prevM),
+    getMonthDoc('foodcost',  prevY,   prevM),
+    getMonthDoc('foodcost',  prevY-1, prevM),
+  ]);
+  renderKPIMonth('kpi-month-body', resM, scM, resM1);
+  renderFCTable('kpi-fc-month', fcM, fcM1);
+
+  // ── YTD ────────────────────────────────────────────────
+  const ytdMonths = ytdEnd > 0 ? Array.from({length: ytdEnd}, (_,i) => i) : [prevM];
+  let ytdRes = {room:{},fnb:{},room_target:{},fnb_target:{},gop:{},gop_target:{}};
+  let ytdSc  = {room:{},fnb:{}};
+  let ytdResY1 = {room:{},fnb:{},room_target:{},fnb_target:{},gop:{},gop_target:{}};
+  let ytdFc  = {food:{},bev:{},food_target:{},bev_target:{}};
+  let ytdFcY1= {food:{},bev:{},food_target:{},bev_target:{}};
+
+  for (const m of ytdMonths) {
+    const [r,s,r1,f,f1] = await Promise.all([
+      getMonthDoc('results',   year,   m),
+      getMonthDoc('staffcost', year,   m),
+      getMonthDoc('results',   year-1, m),
+      getMonthDoc('foodcost',  year,   m),
+      getMonthDoc('foodcost',  year-1, m),
+    ]);
+    for (const sec of ['room','fnb','room_target','fnb_target']) {
+      agg(ytdRes[sec],   r[sec]  || {});
+      agg(ytdResY1[sec], r1[sec] || {});
     }
-  } catch {}
-});
+    aggSC(ytdSc,  s);
+    for (const sec of ['food','bev','food_target','bev_target']) {
+      aggFC(ytdFc[sec],   f[sec]  || {});
+      aggFC(ytdFcY1[sec], f1[sec] || {});
+    }
+  }
+  renderKPIMonth('kpi-ytd-body', ytdRes, ytdSc, ytdResY1);
+  renderFCTable('kpi-fc-ytd', ytdFc, ytdFcY1);
 
-// Logout
-document.getElementById('logout-btn').addEventListener('click', async () => {
-  await signOut(auth);
-  window.location.href = 'index.html';
-});
+  // ── Graphiques ──────────────────────────────────────────
+  await buildCharts(year);
+}
+
+function agg(t, s) {
+  for (const f of ['incomes','payrollFixed','payrollVar','interim','roomRevenue','roomsSold','roomsAvail']) {
+    t[f] = (parseFloat(t[f])||0) + (parseFloat(s[f])||0);
+  }
+}
+function aggSC(t, s) {
+  for (const sec of ['room','fnb']) {
+    if (!t[sec]) t[sec] = {};
+    for (const f of ['sickDays760','sickDays620','recupDays760','recupDays620','recupHours']) {
+      t[sec][f] = (parseFloat(t[sec][f])||0) + (parseFloat(s[sec]?.[f])||0);
+    }
+  }
+}
+function aggFC(t, s) {
+  for (const f of ['invStart','purchases','invEnd','sales']) {
+    t[f] = (parseFloat(t[f])||0) + (parseFloat(s[f])||0);
+  }
+}
+
+function renderKPIMonth(bodyId, res, sc, resY1) {
+  const r=res?.room||{}, rT=res?.room_target||{}, rY=resY1?.room||{};
+  const f=res?.fnb||{}, fT=res?.fnb_target||{}, fY=resY1?.fnb||{};
+  const g=res?.gop||{}, gT=res?.gop_target||{}, gY=resY1?.gop||{};
+  const cR=calcRoom(r), cRT=calcRoom(rT), cRY=calcRoom(rY);
+  const cF=calcFnb(f),  cFT=calcFnb(fT),  cFY=calcFnb(fY);
+  const cSCR=calcStaffCostCorrection(sc?.room||{},hourlyCost);
+  const cSCF=calcStaffCostCorrection(sc?.fnb||{},hourlyCost);
+  const corrPFR = (parseFloat(r.payrollFixed)||0) - cSCR.deduction;
+  const corrPFF = (parseFloat(f.payrollFixed)||0) - cSCF.deduction;
+  const corrSCR = (parseFloat(r.incomes)||0) > 0 ? ((corrPFR+(parseFloat(r.payrollVar)||0)+(parseFloat(r.interim)||0))/(parseFloat(r.incomes)||1)*100) : null;
+  const corrSCF = (parseFloat(f.incomes)||0) > 0 ? ((corrPFF+(parseFloat(f.payrollVar)||0)+(parseFloat(f.interim)||0))/(parseFloat(f.incomes)||1)*100) : null;
+  const sc_col = v => v===null?'inherit':v<30?'var(--success)':v<40?'var(--warning)':'var(--danger)';
+  const E = (v,fmt) => {
+    if(v===null||v===undefined||isNaN(v)||v===0) return '<span style="color:var(--muted)">—</span>';
+    if(fmt==='eur') return fmtEur(v,0); if(fmt==='eur2') return fmtEur(v,2);
+    if(fmt==='pct') return fmtPct(v);   return fmtNum(v,0);
+  };
+  const row = (lbl,T,A,C,Y,fmt,col) => {
+    const ca=col?col(A):'inherit', cc=col?col(C):'inherit', cy=col?col(Y):'var(--muted)';
+    return `<tr><td class="lbl">${lbl}</td><td>${E(T,fmt)}</td><td style="font-weight:600;color:${ca}">${E(A,fmt)}</td><td style="color:${cc}">${C!==null&&C!==undefined?E(C,fmt):'<span style="color:var(--muted)">—</span>'}</td><td style="color:${cy};font-size:.72rem">${E(Y,fmt)}</td></tr>`;
+  };
+  document.getElementById(bodyId).innerHTML = `
+    <tr><td colspan="5" class="sec-row">🏨 ROOM</td></tr>
+    ${row('Incomes',cRT.arr!==undefined?rT.incomes:null,r.incomes,null,rY.incomes,'eur')}
+    ${row('Staff cost %',cRT.staffCostPct,cR.staffCostPct,corrSCR,cRY.staffCostPct,'pct',sc_col)}
+    ${row('ARR',cRT.arr,cR.arr,null,cRY.arr,'eur2')}
+    ${row('RevPAR',cRT.revpar,cR.revpar,null,cRY.revpar,'eur2')}
+    ${row("Taux d'occ.",cRT.occupancy,cR.occupancy,null,cRY.occupancy,'pct')}
+    <tr><td colspan="5" class="sec-row">🍽 F&B</td></tr>
+    ${row('Incomes',fT.incomes,f.incomes,null,fY.incomes,'eur')}
+    ${row('Staff cost %',cFT.staffCostPct,cF.staffCostPct,corrSCF,cFY.staffCostPct,'pct',sc_col)}
+    <tr><td colspan="5" class="sec-row">📊 GOP</td></tr>
+    ${row('GOP',gT.gop,g.gop,null,gY.gop,'eur')}`;
+}
+
+function renderFCTable(bodyId, fc, fcY1) {
+  const cF=calcFoodCost(fc?.food||{}), cFT=calcFoodCost(fc?.food_target||{}), cFY=calcFoodCost(fcY1?.food||{});
+  const cB=calcFoodCost(fc?.bev||{}),  cBT=calcFoodCost(fc?.bev_target||{}),  cBY=calcFoodCost(fcY1?.bev||{});
+  const fcCol=(v,bev)=>v===null?'inherit':bev?(v<20?'var(--success)':v<=24?'var(--warning)':'var(--danger)'):(v<30?'var(--success)':v<=33?'var(--warning)':'var(--danger)');
+  const E=(v,fmt='eur')=>{ if(v===null||v===undefined||isNaN(v))return '<span style="color:var(--muted)">—</span>'; return fmt==='pct'?fmtPct(v):fmtEur(v,0); };
+  document.getElementById(bodyId).innerHTML = `
+    <tr><td colspan="4" class="sec-row">🥗 FOOD</td></tr>
+    <tr><td class="lbl">Coût matières</td><td>${E(cFT.cost)}</td><td style="font-weight:600">${E(cF.cost)}</td><td style="color:var(--muted);font-size:.72rem">${E(cFY.cost)}</td></tr>
+    <tr><td class="lbl">Ventes</td><td>${E(fc?.food_target?.sales)}</td><td style="font-weight:600">${E(fc?.food?.sales)}</td><td style="color:var(--muted);font-size:.72rem">${E(fcY1?.food?.sales)}</td></tr>
+    <tr><td class="lbl">Food cost %</td><td style="color:${fcCol(cFT.costPct,false)}">${E(cFT.costPct,'pct')}</td><td style="font-weight:700;color:${fcCol(cF.costPct,false)}">${E(cF.costPct,'pct')}</td><td style="font-size:.72rem;color:${fcCol(cFY.costPct,false)}">${E(cFY.costPct,'pct')}</td></tr>
+    <tr><td colspan="4" class="sec-row">🥂 BEVERAGE</td></tr>
+    <tr><td class="lbl">Coût matières</td><td>${E(cBT.cost)}</td><td style="font-weight:600">${E(cB.cost)}</td><td style="color:var(--muted);font-size:.72rem">${E(cBY.cost)}</td></tr>
+    <tr><td class="lbl">Ventes</td><td>${E(fc?.bev_target?.sales)}</td><td style="font-weight:600">${E(fc?.bev?.sales)}</td><td style="color:var(--muted);font-size:.72rem">${E(fcY1?.bev?.sales)}</td></tr>
+    <tr><td class="lbl">Bev cost %</td><td style="color:${fcCol(cBT.costPct,true)}">${E(cBT.costPct,'pct')}</td><td style="font-weight:700;color:${fcCol(cB.costPct,true)}">${E(cB.costPct,'pct')}</td><td style="font-size:.72rem;color:${fcCol(cBY.costPct,true)}">${E(cBY.costPct,'pct')}</td></tr>`;
+}
+
+async function buildCharts(year) {
+  const roomA=[],roomT=[],fnbA=[],fnbT=[],scRA=[],scRC=[],scRT=[],scFA=[],scFC=[],arrA=[],rvpA=[],occA=[],foodA=[],foodT=[],bevA=[],bevT=[];
+  for (let m=0;m<12;m++) {
+    const [res,sc,fc] = await Promise.all([getMonthDoc('results',year,m),getMonthDoc('staffcost',year,m),getMonthDoc('foodcost',year,m)]);
+    const r=calcRoom(res?.room||{}), rT=calcRoom(res?.room_target||{});
+    const f=calcFnb(res?.fnb||{}),   fT=calcFnb(res?.fnb_target||{});
+    const cSCR=calcStaffCostCorrection(sc?.room||{},hourlyCost);
+    const cSCF=calcStaffCostCorrection(sc?.fnb||{},hourlyCost);
+    const cPFR=(parseFloat(res?.room?.payrollFixed)||0)-cSCR.deduction;
+    const cPFF=(parseFloat(res?.fnb?.payrollFixed)||0)-cSCF.deduction;
+    const cSCRpct=(parseFloat(res?.room?.incomes)||0)>0?((cPFR+(parseFloat(res?.room?.payrollVar)||0)+(parseFloat(res?.room?.interim)||0))/(parseFloat(res?.room?.incomes)||1)*100):null;
+    const cSCFpct=(parseFloat(res?.fnb?.incomes)||0)>0?((cPFF+(parseFloat(res?.fnb?.payrollVar)||0)+(parseFloat(res?.fnb?.interim)||0))/(parseFloat(res?.fnb?.incomes)||1)*100):null;
+    roomA.push(parseFloat(res?.room?.incomes)||null); roomT.push(parseFloat(res?.room_target?.incomes)||null);
+    fnbA.push(parseFloat(res?.fnb?.incomes)||null);   fnbT.push(parseFloat(res?.fnb_target?.incomes)||null);
+    scRA.push(r.staffCostPct??null); scRC.push(cSCRpct); scRT.push(rT.staffCostPct??null);
+    scFA.push(f.staffCostPct??null); scFC.push(cSCFpct);
+    arrA.push(r.arr??null); rvpA.push(r.revpar??null); occA.push(r.occupancy??null);
+    foodA.push(calcFoodCost(fc?.food||{}).costPct??null); foodT.push(calcFoodCost(fc?.food_target||{}).costPct??null);
+    bevA.push(calcFoodCost(fc?.bev||{}).costPct??null);   bevT.push(calcFoodCost(fc?.bev_target||{}).costPct??null);
+  }
+  const mk=(id,cfg)=>{if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);};
+  mk('chart-incomes',{type:'bar',data:{labels:MONTHS,datasets:[
+    {label:'ROOM Actual',data:roomA,backgroundColor:'rgba(16,86,91,.7)'},
+    {label:'ROOM Target',data:roomT,backgroundColor:'rgba(16,86,91,.18)',borderColor:'#10565b',borderWidth:1},
+    {label:'F&B Actual', data:fnbA, backgroundColor:'rgba(200,106,74,.7)'},
+    {label:'F&B Target', data:fnbT, backgroundColor:'rgba(200,106,74,.18)',borderColor:'#c86a4a',borderWidth:1},
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>(v/1000).toFixed(0)+'k€'}},x:{ticks:{font:{size:10}}}}}});
+  mk('chart-staffcost',{type:'line',data:{labels:MONTHS,datasets:[
+    {label:'ROOM Actual', data:scRA,borderColor:'#10565b',tension:.3,pointRadius:3,fill:false},
+    {label:'ROOM Corrigé',data:scRC,borderColor:'#1a7a82',borderDash:[4,2],tension:.3,pointRadius:2,fill:false},
+    {label:'ROOM Target', data:scRT,borderColor:'#6c7d36',borderDash:[6,3],tension:.3,pointRadius:2,fill:false},
+    {label:'F&B Actual',  data:scFA,borderColor:'#c86a4a',tension:.3,pointRadius:3,fill:false},
+    {label:'F&B Corrigé', data:scFC,borderColor:'#d9856a',borderDash:[4,2],tension:.3,pointRadius:2,fill:false},
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v!==null?v.toFixed(1)+'%':''}},x:{ticks:{font:{size:10}}}}}});
+  mk('chart-room-kpis',{type:'line',data:{labels:MONTHS,datasets:[
+    {label:'ARR (€)',data:arrA,borderColor:'#10565b',tension:.3,yAxisID:'y',pointRadius:3,fill:false},
+    {label:'RevPAR (€)',data:rvpA,borderColor:'#c86a4a',tension:.3,yAxisID:'y',pointRadius:3,fill:false},
+    {label:"Taux d'occ.(%)",data:occA,borderColor:'#6c7d36',borderDash:[3,2],tension:.3,yAxisID:'y2',pointRadius:2,fill:false},
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{y:{type:'linear',position:'left',ticks:{callback:v=>v+'€'}},y2:{type:'linear',position:'right',ticks:{callback:v=>v.toFixed(0)+'%'},grid:{drawOnChartArea:false}}}}});
+  mk('chart-foodcost',{type:'line',data:{labels:MONTHS,datasets:[
+    {label:'Food Actual',data:foodA,borderColor:'#10565b',tension:.3,pointRadius:3,fill:false},
+    {label:'Food Target',data:foodT,borderColor:'#10565b',borderDash:[5,3],tension:.3,pointRadius:2,fill:false},
+    {label:'Bev Actual', data:bevA, borderColor:'#c86a4a',tension:.3,pointRadius:3,fill:false},
+    {label:'Bev Target', data:bevT, borderColor:'#c86a4a',borderDash:[5,3],tension:.3,pointRadius:2,fill:false},
+  ]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>v!==null?v.toFixed(1)+'%':''}},x:{ticks:{font:{size:10}}}}}});
+}
 </script>
 </body>
 </html>
