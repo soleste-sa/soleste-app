@@ -113,7 +113,6 @@ import { MONTHS, docKey, fmtEur, fmtPct, calcFoodCost } from './js/kpi.js';
 
 let currentYear = new Date().getFullYear();
 let fcData = {};
-let y1Data = {};
 let charts = {};
 let saveTimer = null;
 
@@ -131,16 +130,11 @@ document.getElementById('btn-next-year').addEventListener('click', () => { curre
 
 async function loadYear(year) {
   document.getElementById('year-display').textContent = year;
-  fcData = {}; y1Data = {};
+  fcData = {};
   for (let m = 0; m < 12; m++) {
-    const key  = docKey(year, m);
-    const key1 = docKey(year-1, m);
-    const [cur, prev] = await Promise.all([
-      getDoc(doc(db, 'foodcost', key)).then(s  => s.exists()  ? s.data()  : {}).catch(() => ({})),
-      getDoc(doc(db, 'foodcost', key1)).then(s => s.exists()  ? s.data()  : {}).catch(() => ({})),
-    ]);
-    fcData[key]  = cur;
-    y1Data[key1] = prev;
+    const key = docKey(year, m);
+    const cur = await getDoc(doc(db, 'foodcost', key)).then(s => s.exists() ? s.data() : {}).catch(() => ({}));
+    fcData[key] = cur;
   }
   renderTable(year);
   renderCharts(year);
@@ -153,8 +147,8 @@ function renderTable(year) {
   let hRow1 = '<tr><th class="col-label" rowspan="2">Indicateur</th>';
   let hRow2 = '<tr>';
   for (let m = 0; m < 12; m++) {
-    hRow1 += `<th colspan="2" class="month-group month-header">${MONTHS[m]}</th>`;
-    hRow2 += `<th class="col-A sub-header month-group">Actual</th><th class="col-Y1 sub-header">Y-1</th>`;
+    hRow1 += `<th class="month-group month-header">${MONTHS[m]}</th>`;
+    hRow2 += `<th class="col-A sub-header month-group">Actual</th>`;
   }
   thead.innerHTML = hRow1 + '</tr>' + hRow2 + '</tr>';
 
@@ -182,7 +176,7 @@ function renderTable(year) {
     for (let m2 = 0; m2 < 12; m2++) {
       const key2 = docKey(year, m2);
       const bPct = fcData[key2]?.[sec.key + '_budgetpct'] ?? defaultPct;
-      html += `<td colspan="2" class="month-group" style="text-align:center;background:rgba(108,125,54,.04);">
+      html += `<td class="month-group" style="text-align:center;background:rgba(108,125,54,.04);">
         <input type="number" step="0.1" min="0" max="100" value="${bPct}"
           style="width:55px;padding:2px 4px;border:1.5px solid var(--olive);border-radius:3px;text-align:center;font-family:var(--font-mono);font-size:.78rem;"
           data-year="${year}" data-month="${m2}" data-bsec="${sec.key}" onchange="handleBudgetPct(this)"> %
@@ -205,19 +199,15 @@ function renderTable(year) {
         if (f.type === 'input') {
           const aVal = d[f.field] ?? '';
           const tVal = dT[f.field] ?? '';
-          const y1Val = dY1[f.field];
-          html += `<td class="col-T month-group"><input type="number" step="any" min="0" value="${tVal}" data-year="${year}" data-month="${m}" data-section="${sec.key}_target" data-field="${f.field}" onchange="handleInput(this)"></td>`;
+            html += `<td class="col-T month-group"><input type="number" step="any" min="0" value="${tVal}" data-year="${year}" data-month="${m}" data-section="${sec.key}_target" data-field="${f.field}" onchange="handleInput(this)"></td>`;
           html += `<td class="col-A"><input type="number" step="any" min="0" value="${aVal}" data-year="${year}" data-month="${m}" data-section="${sec.key}" data-field="${f.field}" onchange="handleInput(this)"></td>`;
           html += `<td class="col-Y1">${y1Val !== undefined ? fmtEur(y1Val) : '—'}</td>`;
         } else if (f.type === 'auto_eur') {
           html += `<td class="col-A month-group"><span class="computed-val">${calc.cost !== undefined ? fmtEur(calc.cost) : '—'}</span></td>`;
-          html += `<td class="col-Y1">${calcY1.cost !== undefined ? fmtEur(calcY1.cost) : '—'}</td>`;
         } else if (f.type === 'auto_pct') {
           const color  = fcColor(calc.costPct,  sec.isBev);
           const colorT = fcColor(calcT.costPct, sec.isBev);
-          const colorY1 = fcColor(calcY1.costPct, sec.isBev);
-          html += `<td class="col-A month-group"><span class="computed-val" style="color:${color};font-size:.9rem;">${calc.costPct !== null ? fmtPct(calc.costPct) : '—'}</span></td>`;
-          html += `<td class="col-Y1"><span style="color:${colorY1}">${calcY1.costPct !== null ? fmtPct(calcY1.costPct) : '—'}</span></td>`;
+            html += `<td class="col-A month-group"><span class="computed-val" style="color:${color};font-size:.9rem;">${calc.costPct !== null ? fmtPct(calc.costPct) : '—'}</span></td>`;
         }
       }
       html += '</tr>';
@@ -266,18 +256,16 @@ async function saveMonth(year, month) {
 }
 
 function renderCharts(year) {
-  const foodActual = [], foodTarget = [], foodY1 = [];
-  const bevActual  = [], bevTarget  = [], bevY1  = [];
+  const foodActual = [], foodTarget = [];
+  const bevActual  = [], bevTarget  = [];
 
   for (let m = 0; m < 12; m++) {
     const key  = docKey(year, m);
     const key1 = docKey(year-1, m);
     foodActual.push(calcFoodCost(fcData[key]?.food || {}).costPct ?? null);
     foodTarget.push(calcFoodCost(fcData[key]?.food_target || {}).costPct ?? null);
-    foodY1.push(calcFoodCost(y1Data[key1]?.food || {}).costPct ?? null);
     bevActual.push(calcFoodCost(fcData[key]?.bev || {}).costPct ?? null);
     bevTarget.push(calcFoodCost(fcData[key]?.bev_target || {}).costPct ?? null);
-    bevY1.push(calcFoodCost(y1Data[key1]?.bev || {}).costPct ?? null);
   }
 
   if (charts.food) charts.food.destroy();
@@ -299,7 +287,6 @@ function renderCharts(year) {
       datasets: [
         { label: 'Actual', data: foodActual, borderColor: '#10565b', backgroundColor: 'rgba(16,86,91,.1)', tension: .3, pointRadius: 4, fill: false },
         { label: 'Target', data: foodTarget, borderColor: '#6c7d36', borderDash: [5,3], tension: .3, pointRadius: 3, fill: false },
-        { label: 'Y-1',    data: foodY1,    borderColor: '#8a8a8a', borderDash: [2,3], tension: .3, pointRadius: 2, fill: false },
       ]
     },
     options: opts()
@@ -312,7 +299,6 @@ function renderCharts(year) {
       datasets: [
         { label: 'Actual', data: bevActual, borderColor: '#c86a4a', backgroundColor: 'rgba(200,106,74,.1)', tension: .3, pointRadius: 4, fill: false },
         { label: 'Target', data: bevTarget, borderColor: '#6c7d36', borderDash: [5,3], tension: .3, pointRadius: 3, fill: false },
-        { label: 'Y-1',    data: bevY1,    borderColor: '#8a8a8a', borderDash: [2,3], tension: .3, pointRadius: 2, fill: false },
       ]
     },
     options: opts()
