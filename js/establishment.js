@@ -64,11 +64,16 @@ export async function initEstablishment(email) {
   const validSaved = saved && ests.find(e => e.id === saved);
 
   let activeEst;
-  if (validSaved) {
+  if (validSaved && validSaved.id !== 'master') {
+    // Utiliser le localStorage seulement si ce n'est pas master
     activeEst = validSaved;
   } else {
-    // Par défaut : premier établissement NON-master, ou master si c'est le seul
-    activeEst = ests.find(e => e.id !== 'master') || ests[0];
+    // Par défaut : premier établissement NON-master
+    activeEst = ests.find(e => e.id !== 'master');
+    if (!activeEst) {
+      // Uniquement member de master — pas de données de travail
+      return { estId: null, estName: 'MASTER', establishments: ests, isMaster: true };
+    }
     setActiveEstId(activeEst.id);
   }
 

@@ -37,32 +37,25 @@ export function renderEstSelector(establishments, currentEstId, onSwitch) {
     'backdrop-filter:blur(4px)',
   ].join(';');
 
-  establishments
-    .filter(e => e.id !== 'master')
-    .forEach(e => {
-      const opt = document.createElement('option');
-      opt.value = e.id;
-      opt.textContent = e.name;
-      if (e.id === currentEstId) opt.selected = true;
-      sel.appendChild(opt);
-    });
+  const workEsts = establishments.filter(e => e.id !== 'master');
+  workEsts.forEach(e => {
+    const opt = document.createElement('option');
+    opt.value = e.id;
+    opt.textContent = e.name;
+    if (e.id === currentEstId) opt.selected = true;
+    sel.appendChild(opt);
+  });
 
-  // Ajouter MASTER si disponible
-  if (establishments.find(e => e.id === 'master')) {
-    const sep = document.createElement('option');
-    sep.disabled = true;
-    sep.textContent = '──────────';
-    sel.appendChild(sep);
-    const mOpt = document.createElement('option');
-    mOpt.value = 'master';
-    mOpt.textContent = '⚙ MASTER';
-    if (currentEstId === 'master') mOpt.selected = true;
-    sel.appendChild(mOpt);
-  }
+  // Si aucun établissement de travail n'est sélectionné, masquer le sélecteur
+  if (!workEsts.length) return;
+
+  // MASTER n'apparaît PAS dans le sélecteur de travail — accessible uniquement via Réglages
+  // Le sélecteur ne montre que les vrais établissements
 
   sel.addEventListener('change', () => {
-    setActiveEstId(sel.value);
-    if (onSwitch) onSwitch(sel.value);
+    const newEstId = sel.value;
+    setActiveEstId(newEstId);
+    if (onSwitch) onSwitch(newEstId);
     else window.location.reload();
   });
 
