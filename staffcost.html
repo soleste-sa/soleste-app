@@ -105,6 +105,7 @@ import { initEstablishment, getActiveEstId, setActiveEstId, estDocKey } from './
 import { renderEstSelector } from './js/est-header.js';
 import { toast } from './js/utils.js';
 import { MONTHS, docKey, fmtEur, fmtPct, fmtNum, calcStaffCostCorrection } from './js/kpi.js';
+const eKey = (y, m) => estDocKey(window.__estId || 'panoramique', y, m);
 import { getSettings } from './js/settings.js';
 
 let currentYear = new Date().getFullYear();
@@ -139,7 +140,7 @@ async function loadYear(year) {
   document.getElementById('year-display').textContent = year;
   scData = {}; resData = {};
   for (let m = 0; m < 12; m++) {
-    const key = docKey(year, m);
+    const key = eKey(year, m);
     const [sc, res] = await Promise.all([
       getDoc(doc(db, 'staffcost', key)).then(s => s.exists() ? s.data() : {}).catch(() => ({})),
       getDoc(doc(db, 'results',   key)).then(s => s.exists() ? s.data() : {}).catch(() => ({})),
@@ -188,7 +189,7 @@ function renderTable(year) {
       html += `<tr class="${isAuto ? 'auto-row' : ''}">`;
       html += `<td class="col-label">${f.label}</td>`;
       for (let m = 0; m < 12; m++) {
-        const key = docKey(year, m);
+        const key = eKey(year, m);
         const sc  = scData[key]?.[sec.key] || {};
         const res = resData[key]?.[sec.key] || {};
         const corr = calcStaffCostCorrection(sc, hourlyCost);
@@ -234,7 +235,7 @@ function renderTable(year) {
 
 window.handleInput = function(el) {
   const { year, month, section, field } = el.dataset;
-  const key = docKey(parseInt(year), parseInt(month));
+  const key = eKey(parseInt(year), parseInt(month));
   if (!scData[key]) scData[key] = {};
   if (!scData[key][section]) scData[key][section] = {};
   scData[key][section][field] = parseFloat(el.value) || 0;
@@ -244,7 +245,7 @@ window.handleInput = function(el) {
 };
 
 async function saveMonth(year, month) {
-  const key = docKey(year, month);
+  const key = eKey(year, month);
   const ind = document.getElementById('saving-ind');
   ind.classList.add('show');
   try {

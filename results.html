@@ -116,6 +116,7 @@ import { renderEstSelector } from './js/est-header.js';
 import { toast } from './js/utils.js';
 import { getSettings } from './js/settings.js';
 import { MONTHS, docKey, fmtEur, fmtPct, fmtNum, calcRoom, calcFnb, calcStaffCostCorrection } from './js/kpi.js';
+const eKey = (y, m) => estDocKey(window.__estId || 'panoramique', y, m);
 
 window.signOut = signOut;
 let currentYear = new Date().getFullYear();
@@ -156,8 +157,8 @@ async function loadYear(year) {
   document.getElementById('year-display').textContent = year;
   yearData = {}; corrData = {}; y1YearData = {};
   for (let m = 0; m < 12; m++) {
-    const key  = docKey(year,   m);
-    const key1 = docKey(year-1, m);
+    const key  = eKey(year,   m);
+    const key1 = eKey(year-1, m);
     const [res, sc, res1] = await Promise.all([
       getDoc(doc(db, 'results',   key)).then(s  => s.exists()  ? s.data()  : {}).catch(() => ({})),
       getDoc(doc(db, 'staffcost', key)).then(s  => s.exists()  ? s.data()  : {}).catch(() => ({})),
@@ -230,8 +231,8 @@ function renderRow(row, year) {
   let cells = `<td class="col-label">${row.label}</td>`;
 
   for (let m = 0; m < 12; m++) {
-    const key   = docKey(year, m);
-    const key1  = docKey(year - 1, m);
+    const key   = eKey(year, m);
+    const key1  = eKey(year - 1, m);
     const d     = yearData[key]?.[row.section] || {};
     const dT    = yearData[key]?.[row.section + '_target'] || {};
     const dY1   = y1YearData[key1]?.[row.section] || {};
@@ -337,7 +338,7 @@ function fmt(v, type) {
 // ── Sauvegarde auto ────────────────────────────────────────
 window.handleInput = function(el) {
   const { year, month, section, field } = el.dataset;
-  const key = docKey(parseInt(year), parseInt(month));
+  const key = eKey(parseInt(year), parseInt(month));
   if (!yearData[key]) yearData[key] = {};
   if (!yearData[key][section]) yearData[key][section] = {};
   yearData[key][section][field] = parseFloat(el.value) || 0;
@@ -350,7 +351,7 @@ window.handleInput = function(el) {
 };
 
 function refreshAutoRow(year, month, section) {
-  const key = docKey(year, month);
+  const key = eKey(year, month);
   const d = yearData[key]?.[section] || {};
   const dT = yearData[key]?.[section + '_target'] || {};
   // Mettre à jour les cellules auto de cette colonne
@@ -365,7 +366,7 @@ function refreshAutoRow(year, month, section) {
 }
 
 async function saveMonth(year, month) {
-  const key = docKey(year, month);
+  const key = eKey(year, month);
   const ind = document.getElementById('saving-ind');
   ind.classList.add('show');
   try {

@@ -112,6 +112,7 @@ import { initEstablishment, getActiveEstId, setActiveEstId, estDocKey } from './
 import { renderEstSelector } from './js/est-header.js';
 import { toast } from './js/utils.js';
 import { MONTHS, docKey, fmtEur, fmtPct, calcFoodCost } from './js/kpi.js';
+const eKey = (y, m) => estDocKey(window.__estId || 'panoramique', y, m);
 
 let currentYear = new Date().getFullYear();
 let fcData = {};
@@ -141,7 +142,7 @@ async function loadYear(year) {
   document.getElementById('year-display').textContent = year;
   fcData = {};
   for (let m = 0; m < 12; m++) {
-    const key = docKey(year, m);
+    const key = eKey(year, m);
     const cur = await getDoc(doc(db, 'foodcost', key)).then(s => s.exists() ? s.data() : {}).catch(() => ({}));
     fcData[key] = cur;
   }
@@ -184,7 +185,7 @@ function renderTable(year) {
     // Ligne % Budget cible
     html += `<tr style="background:rgba(108,125,54,.08);"><td class="col-label" style="font-weight:600;color:var(--olive);">% Budget cible</td>`;
     for (let m2 = 0; m2 < 12; m2++) {
-      const key2 = docKey(year, m2);
+      const key2 = eKey(year, m2);
       const bPct = fcData[key2]?.[sec.key + '_budgetpct'] ?? defaultPct;
       html += `<td class="month-group" style="text-align:center;background:rgba(108,125,54,.04);">
         <input type="number" step="0.1" min="0" max="100" value="${bPct}"
@@ -199,7 +200,7 @@ function renderTable(year) {
       const isAuto = f.type !== 'input';
       html += `<tr class="${isAuto ? 'auto-row' : ''}"><td class="col-label">${f.label}</td>`;
       for (let m = 0; m < 12; m++) {
-        const key = docKey(year, m);
+        const key = eKey(year, m);
         const d   = fcData[key]?.[sec.key] || {};
         const calc = calcFoodCost(d);
 
@@ -229,7 +230,7 @@ window.handleBudgetPct = function(el) {
   const year  = parseInt(el.dataset.year);
   const month = parseInt(el.dataset.month);
   const sec   = el.dataset.bsec;
-  const key   = docKey(year, month);
+  const key   = eKey(year, month);
   if (!fcData[key]) fcData[key] = {};
   fcData[key][sec + '_budgetpct'] = parseFloat(el.value) || 0;
   clearTimeout(saveTimer);
@@ -238,7 +239,7 @@ window.handleBudgetPct = function(el) {
 
 window.handleInput = function(el) {
   const { year, month, section, field } = el.dataset;
-  const key = docKey(parseInt(year), parseInt(month));
+  const key = eKey(parseInt(year), parseInt(month));
   if (!fcData[key]) fcData[key] = {};
   if (!fcData[key][section]) fcData[key][section] = {};
   fcData[key][section][field] = parseFloat(el.value) || 0;
@@ -249,7 +250,7 @@ window.handleInput = function(el) {
 };
 
 async function saveMonth(year, month) {
-  const key = docKey(year, month);
+  const key = eKey(year, month);
   const ind = document.getElementById('saving-ind');
   ind.classList.add('show');
   try {
@@ -263,7 +264,7 @@ function renderCharts(year) {
   const bevActual  = [], bevTarget  = [];
 
   for (let m = 0; m < 12; m++) {
-    const key  = docKey(year, m);
+    const key  = eKey(year, m);
     foodActual.push(calcFoodCost(fcData[key]?.food || {}).costPct ?? null);
     foodTarget.push(calcFoodCost(fcData[key]?.food_target || {}).costPct ?? null);
     bevActual.push(calcFoodCost(fcData[key]?.bev || {}).costPct ?? null);
