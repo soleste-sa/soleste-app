@@ -302,7 +302,7 @@
                 <label class="form-label">Nom complet</label>
                 <input type="text" id="new-est-name" class="form-control" placeholder="ex: Hôtel Val-de-Poix">
               </div>
-              <button class="btn btn-primary" id="btn-add-est">Ajouter</button>
+              <button type="button" class="btn btn-primary" id="btn-add-est">Ajouter</button>
             </div>
           </div>
 
@@ -318,7 +318,7 @@
                 <label class="form-label">Établissement</label>
                 <select id="member-est" class="form-control"></select>
               </div>
-              <button class="btn btn-primary" id="btn-add-member">Ajouter</button>
+              <button type="button" class="btn btn-primary" id="btn-add-member">Ajouter</button>
             </div>
           </div>
 
@@ -326,7 +326,7 @@
           <div style="background:rgba(200,106,74,.08);border:1px solid rgba(200,106,74,.2);border-radius:var(--radius-lg);padding:14px;">
             <div class="label" style="color:var(--clay);margin-bottom:6px;">⚠ Migration des données existantes</div>
             <p class="form-hint" style="margin-bottom:10px;">À exécuter une seule fois pour migrer toutes les données existantes vers l'établissement "panoramique". Cette opération est non-destructive.</p>
-            <button class="btn btn-outline btn-sm" id="btn-migrate" style="border-color:var(--clay);color:var(--clay);">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-migrate" style="border-color:var(--clay);color:var(--clay);">
               Migrer les données → panoramique
             </button>
             <span id="migrate-status" style="font-size:.8rem;color:var(--muted);margin-left:12px;"></span>
@@ -363,7 +363,7 @@
           <div class="settings-section-desc">Informations sur l'application</div>
           <table style="width:100%;font-size:.875rem;">
             <tr><td class="text-muted" style="padding:6px 0;">Application</td><td class="fw-600">SOLESTE</td></tr>
-            <tr><td class="text-muted" style="padding:6px 0;">Version</td><td>1.8.0</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0;">Version</td><td>1.8.1</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Propriétaire</td><td>Soleste SA</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Hébergement</td><td>GitHub Pages</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Base de données</td><td>Firebase Firestore</td></tr>
@@ -813,7 +813,7 @@ async function loadEstList() {
           <strong style="color:var(--forest);">${e.id === 'master' ? '⚙ MASTER' : '🏨 ' + e.name}</strong>
           <code style="font-size:.72rem;color:var(--muted);margin-left:8px;">${e.id}</code>
         </div>
-        ${e.id !== 'master' ? `<button class="btn btn-danger btn-sm" onclick="removeEst('${e.id}')">Supprimer</button>` : ''}
+        ${e.id !== 'master' ? `<button type="button" class="btn btn-danger btn-sm" onclick="removeEst('${e.id}')">Supprimer</button>` : ''}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;">${memberList || '<span style="color:var(--muted);font-size:.78rem;">Aucun membre</span>'}</div>
     </div>`;
