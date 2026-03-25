@@ -287,6 +287,12 @@ import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establis
 import { renderEstSelector } from './js/est-header.js';
 import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, debounce } from './js/utils.js';
 
+function getEstId() {
+  const id = window.__estId;
+  if (!id) throw new Error('Établissement non initialisé — veuillez recharger la page.');
+  return id;
+}
+
 window.closeModal = closeModal;
 
 let allArticles  = [];
@@ -460,7 +466,7 @@ async function validateOrder() {
 
   try {
     const orderRef = await addDoc(collection(db, 'orders'), {
-      estId:      window.__estId || 'panoramique',
+      estId:      getEstId(),
       createdAt:  serverTimestamp(),
       createdBy:  currentUser.email,
       status:     'draft',  // statut global : draft / partial / complete

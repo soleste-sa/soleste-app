@@ -244,6 +244,12 @@ import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establis
 import { renderEstSelector } from './js/est-header.js';
 import { toast, normalize, fuzzyMatch, formatCurrency, formatPercent, openModal, closeModal, setupModalClose, debounce } from './js/utils.js';
 
+function getEstId() {
+  const id = window.__estId;
+  if (!id) throw new Error('Établissement non initialisé — veuillez recharger la page.');
+  return id;
+}
+
 window.closeModal = closeModal;
 window.openModal  = openModal;
 
@@ -706,6 +712,7 @@ document.getElementById('btn-save-recipe').addEventListener('click', async () =>
       toast('Fiche recette mise à jour', 'success');
     } else {
       data.createdAt = serverTimestamp();
+      data.estId = getEstId();
       await addDoc(collection(db, 'recipes'), data);
       toast('Fiche recette créée', 'success');
     }

@@ -27,8 +27,10 @@ export const TVA_RATES = [
 
 // ── CRUD Recettes ───────────────────────────────────────────
 export async function createRecipe(data) {
+  const estId = (typeof window !== 'undefined' && window.__estId) || 'panoramique';
   return await addDoc(collection(db, COL), {
     ...sanitizeRecipe(data),
+    estId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });

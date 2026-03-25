@@ -371,6 +371,13 @@ import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establis
 import { renderEstSelector } from './js/est-header.js';
 import { toast, normalize, fuzzyMatch, categoryBadge, formatCurrency, openModal, closeModal, setupModalClose, debounce } from './js/utils.js';
 
+// ── Helper : estId courant (strict — lève une erreur si non initialisé) ──
+function getEstId() {
+  const id = window.__estId;
+  if (!id) throw new Error('Établissement non initialisé — veuillez recharger la page.');
+  return id;
+}
+
 window.closeModal = closeModal;
 window.openModal  = openModal;
 
@@ -603,6 +610,7 @@ document.getElementById('btn-save-article').addEventListener('click', async () =
       toast('Article mis à jour', 'success');
     } else {
       data.createdAt = serverTimestamp();
+      data.estId = getEstId();
       await addDoc(collection(db, 'articles'), data);
       logActivity('database', `Article ajouté : ${name}`);
       toast('Article créé', 'success');
@@ -687,7 +695,7 @@ async function handleImportFile(file) {
     };
 
     importData = rows.map(r => ({
-      estId:        window.__estId || 'panoramique',
+      estId:        getEstId(),
       name:         get(r,'Nom','Name','Article','Libellé','Libelle','Description') || '',
       category:     get(r,'Catégorie','Categorie','Category','Cat') || 'FOOD',
       uc:           get(r,'UC','Unité commande','Unite commande','Unit','Conditionnement') || '',
@@ -751,6 +759,7 @@ document.getElementById('btn-confirm-import').addEventListener('click', async ()
         if (existingId) { await updateDoc(doc(db, 'articles', existingId), { priceUC: data.priceUC, updatedAt: data.updatedAt, updatedBy: data.updatedBy }); updated++; }
       } else {
         data.createdAt = serverTimestamp();
+        data.estId = getEstId();
         await addDoc(collection(db, 'articles'), data);
         added++;
       }
@@ -1084,6 +1093,7 @@ document.getElementById('btn-confirm-ocr').addEventListener('click', async () =>
           supplier:     item._supplier || '',
           supplierCode: item.supplierCode || '',
           barcode:      item.barcode || '',
+          estId:        getEstId(),
           createdAt:    serverTimestamp(),
           updatedAt:    serverTimestamp(),
           updatedBy:    currentUser.email,

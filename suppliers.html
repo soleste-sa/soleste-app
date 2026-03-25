@@ -184,6 +184,12 @@ import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establis
 import { renderEstSelector } from './js/est-header.js';
 import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, debounce } from './js/utils.js';
 
+function getEstId() {
+  const id = window.__estId;
+  if (!id) throw new Error('Établissement non initialisé — veuillez recharger la page.');
+  return id;
+}
+
 window.closeModal = closeModal;
 window.openModal  = openModal;
 
@@ -339,7 +345,6 @@ async function handleSave() {
 
   const data = {
     name,
-    estId:   window.__estId || 'panoramique',
     phone:   document.getElementById('sup-phone').value.trim(),
     email:   document.getElementById('sup-email').value.trim(),
     contact: document.getElementById('sup-contact').value.trim(),
@@ -353,6 +358,7 @@ async function handleSave() {
       toast('Fournisseur mis à jour', 'success');
     } else {
       data.createdAt = serverTimestamp();
+      data.estId = getEstId();
       await addDoc(collection(db, 'suppliers'), data);
       toast(`Fournisseur "${name}" ajouté`, 'success');
     }
