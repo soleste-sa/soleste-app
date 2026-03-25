@@ -280,11 +280,12 @@ onAuthStateChanged(auth, async user => {
   } catch { hourlyRate = 0; }
 
   // Load articles
-  const artSnap = await getDocs(collection(db, 'articles'));
+  const estId = window.__estId || 'panoramique';
+  const artSnap = await getDocs(query(collection(db, 'articles'), where('estId','==',estId), orderBy('name')));
   allArticles = artSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
   // Load recipes realtime
-  const q = query(collection(db, 'recipes'), orderBy('name'));
+  const q = query(collection(db, 'recipes'), where('estId','==',window.__estId||'panoramique'), orderBy('name'));
   onSnapshot(q, snap => {
     allRecipes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderGrid();

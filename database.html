@@ -404,8 +404,24 @@ document.getElementById('logout-btn').addEventListener('click', async () => { aw
 // ── Load Articles (realtime) ─────────────────────────────────
 function loadArticles() {
   const estId = window.__estId || 'panoramique';
+  // Query filtrée par établissement
   const q = query(collection(db, 'articles'), where('estId','==',estId), orderBy('name'));
-  onSnapshot(q, snap => {
+  onSnapshot(q, async snap => {
+    // Fallback : si 0 résultats, vérifier si des docs sans estId existent (avant migration)
+    if (snap.empty) {
+      const allSnap = await getDocs(query(collection(db, 'articles'), orderBy('name')));
+      const unmigratedDocs = allSnap.docs.filter(d => !d.data().estId);
+      if (unmigratedDocs.length > 0) {
+        // Docs sans estId détectés — afficher un banner de migration
+        showMigrationBanner(unmigratedDocs.length, estId);
+        // Charger quand même les docs non migrés pour ne pas bloquer
+        allArticles = allSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderArticles();
+        updateIncompleteCount();
+        return;
+      }
+    }
+    hideMigrationBanner();
     allArticles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTable();
   }, err => {

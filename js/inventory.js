@@ -46,6 +46,7 @@ export function listenPlaces(callback) {
 // Créer un nouvel inventaire (en cours)
 export async function createInventory(data) {
   const ref = await addDoc(collection(db, COL_INV), {
+    estId: (typeof window !== 'undefined' && window.__estId) || 'panoramique',
     date:       data.date || new Date().toISOString().slice(0, 10),
     places:     data.places || [],
     createdBy:  data.createdBy || '',
@@ -80,7 +81,7 @@ export async function deleteInventory(id) {
 // Récupérer tous les inventaires (historique)
 export async function getAllInventories() {
   const snap = await getDocs(
-    query(collection(db, COL_INV), orderBy('createdAt', 'desc'))
+    query(collection(db, COL_INV), where('estId','==', (typeof window !== 'undefined' && window.__estId) || 'panoramique'), orderBy('createdAt', 'desc'))
   );
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
@@ -88,7 +89,7 @@ export async function getAllInventories() {
 // Écoute temps réel inventaires
 export function listenInventories(callback) {
   return onSnapshot(
-    query(collection(db, COL_INV), orderBy('createdAt', 'desc')),
+    query(collection(db, COL_INV), where('estId','==', (typeof window !== 'undefined' && window.__estId) || 'panoramique'), orderBy('createdAt', 'desc')),
     snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   );
 }
