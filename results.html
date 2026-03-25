@@ -137,17 +137,22 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 document.getElementById('btn-prev-year').addEventListener('click', () => { currentYear--; loadYear(currentYear); });
 document.getElementById('btn-next-year').addEventListener('click', () => { currentYear++; loadYear(currentYear); });
 
+let y1YearData = {};
+
 async function loadYear(year) {
   document.getElementById('year-display').textContent = year;
-  yearData = {}; corrData = {};
+  yearData = {}; corrData = {}; y1YearData = {};
   for (let m = 0; m < 12; m++) {
-    const key = docKey(year, m);
-    const [res, sc] = await Promise.all([
-      getDoc(doc(db, 'results', key)).then(s => s.exists() ? s.data() : {}).catch(() => ({})),
-      getDoc(doc(db, 'staffcost', key)).then(s => s.exists() ? s.data() : {}).catch(() => ({})),
+    const key  = docKey(year,   m);
+    const key1 = docKey(year-1, m);
+    const [res, sc, res1] = await Promise.all([
+      getDoc(doc(db, 'results',   key)).then(s  => s.exists()  ? s.data()  : {}).catch(() => ({})),
+      getDoc(doc(db, 'staffcost', key)).then(s  => s.exists()  ? s.data()  : {}).catch(() => ({})),
+      getDoc(doc(db, 'results',   key1)).then(s => s.exists() ? s.data() : {}).catch(() => ({})),
     ]);
-    yearData[key] = res;
-    corrData[key] = sc;
+    yearData[key]   = res;
+    corrData[key]   = sc;
+    y1YearData[key1] = res1;
   }
   renderTable(year);
 }
@@ -216,7 +221,7 @@ function renderRow(row, year) {
     const key1  = docKey(year - 1, m);
     const d     = yearData[key]?.[row.section] || {};
     const dT    = yearData[key]?.[row.section + '_target'] || {};
-    const dY1   = {}; // Y-1 sera chargé à part — on affiche — pour l'instant
+    const dY1   = y1YearData[key1]?.[row.section] || {};
     const sc    = corrData[key] || {};
 
     if (row.type === 'input') {
@@ -229,8 +234,9 @@ function renderRow(row, year) {
       // Corrigé (lecture seule — calculé depuis staffcost)
       const corrVal = getCorrectedValue(sc, row.section, row.field, d);
       cells += `<td class="col-C"><span class="computed-val">${corrVal !== null ? corrVal : '—'}</span></td>`;
-      // Y-1 (lecture seule)
-      cells += `<td class="col-Y1" data-y1-key="${docKey(year-1,m)}" data-y1-section="${row.section}" data-y1-field="${row.field}">—</td>`;
+      // Y-1 (lecture seule — chargé depuis Firestore année précédente)
+      const y1Val = dY1[row.field];
+      cells += `<td class="col-Y1">${y1Val !== undefined && y1Val !== 0 ? fmt(y1Val, row.fmt) : '—'}</td>`;
     } else {
       // Auto-calculé
       const calcA = getAutoValue(d, row.section, row.field);
@@ -240,7 +246,8 @@ function renderRow(row, year) {
       cells += `<td class="col-T month-group auto-row"><span class="computed-val">${fmt(calcT, row.fmt)}</span></td>`;
       cells += `<td class="col-A auto-row"><span class="computed-val" style="color:${color}">${fmt(calcA, row.fmt)}</span></td>`;
       cells += `<td class="col-C auto-row"><span class="computed-val">${corrSc !== null ? fmt(corrSc, row.fmt) : '—'}</span></td>`;
-      cells += `<td class="col-Y1 auto-row" data-y1-key="${docKey(year-1,m)}" data-y1-section="${row.section}" data-y1-field="${row.field}_auto">—</td>`;
+      const calcY1 = getAutoValue(dY1, row.section, row.field);
+      cells += `<td class="col-Y1 auto-row">${fmt(calcY1, row.fmt)}</td>`;
     }
   }
 
@@ -340,30 +347,6 @@ async function saveMonth(year, month) {
   finally { setTimeout(() => ind.classList.remove('show'), 1500); }
 }
 
-// ── Charger Y-1 après le rendu (optimisation) ─────────────
-async function loadY1Data(year) {
-  const y1Data = {};
-  for (let m = 0; m < 12; m++) {
-    const k = docKey(year-1, m);
-    y1Data[k] = await getDoc(doc(db, 'results', k)).then(s => s.exists() ? s.data() : {}).catch(() => ({}));
-  }
-  // Mettre à jour les cellules Y-1
-  document.querySelectorAll('[data-y1-key]').forEach(td => {
-    const { y1Key, y1Section, y1Field } = td.dataset;
-    const d = y1Data[y1Key]?.[y1Section] || {};
-    let val = null;
-    if (y1Field.endsWith('_auto')) {
-      const realField = y1Field.replace('_auto','');
-      const c = y1Section === 'room' ? calcRoom(d) : y1Section === 'fnb' ? calcFnb(d) : {};
-      val = c[realField];
-    } else {
-      val = d[y1Field];
-    }
-    if (val !== null && val !== undefined && !isNaN(val)) {
-      td.textContent = typeof val === 'number' && val > 100 ? fmtEur(val, 0) : val < 1 ? fmtPct(val*100) : fmtNum(val, 0);
-    }
-  });
-}
 </script>
 </body>
 </html>
