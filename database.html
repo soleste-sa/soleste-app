@@ -617,17 +617,41 @@ async function handleImportFile(file) {
     const ws  = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
+    // Normaliser les clés pour matcher insensible casse/accents/espaces/tirets
+    const norm = s => String(s||'').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[-_\s]+/g,' ').trim();
+
+    // Construire un index des clés normalisées
+    const keyMap = {};
+    if (rows.length > 0) {
+      Object.keys(rows[0]).forEach(k => { keyMap[norm(k)] = k; });
+    }
+    const get = (r, ...aliases) => {
+      for (const a of aliases) {
+        const raw = keyMap[norm(a)];
+        if (raw !== undefined && r[raw] !== undefined && r[raw] !== '') return r[raw];
+      }
+      return '';
+    };
+
     importData = rows.map(r => ({
-      name:         r['Nom'] || r['name'] || '',
-      category:     r['Catégorie'] || r['category'] || 'FOOD',
-      uc:           r['UC'] || r['uc'] || '',
-      us:           r['US'] || r['us'] || '',
-      ratio:        parseFloat(r['Ratio'] || r['ratio']) || 0,
-      priceUC:      parseFloat(r['Prix UC'] || r['priceUC']) || 0,
-      supplier:     r['Fournisseur'] || r['supplier'] || '',
-      supplierCode: r['Code article'] || r['supplierCode'] || '',
-      barcode:      r['Code-barre'] || r['barcode'] || '',
+      name:         get(r,'Nom','Name','Article','Libellé','Libelle','Description') || '',
+      category:     get(r,'Catégorie','Categorie','Category','Cat') || 'FOOD',
+      uc:           get(r,'UC','Unité commande','Unite commande','Unit','Conditionnement') || '',
+      us:           get(r,'US','Unité stockage','Unite stockage','Unité de stockage') || '',
+      ratio:        parseFloat(get(r,'Ratio','ratio','Qté/UC','Qte UC','Quantité UC')) || 0,
+      priceUC:      parseFloat(get(r,'Prix UC','PrixUC','Prix Achat','Prix achat UC','PA','Price')) || 0,
+      supplier:     get(r,'Fournisseur','Supplier','Fournisseurs') || '',
+      supplierCode: get(r,'Code article','Code fournisseur','Ref','Référence','Reference','SKU') || '',
+      barcode:      get(r,'Code-barre','Barcode','EAN','Code barre') || '',
     })).filter(r => r.name);
+
+    // Debug: afficher les clés lues si rien ne mappe
+    if (importData.length === 0 && rows.length > 0) {
+      console.warn('[SOLESTE Import] Colonnes lues dans le fichier:', Object.keys(rows[0]));
+      toast('Colonnes non reconnues. Vérifiez les en-têtes du fichier.', 'warning');
+    }
 
     // Detect duplicates
     const existingNames = new Set(allArticles.map(a => normalize(a.name)));
