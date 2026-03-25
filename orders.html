@@ -678,7 +678,7 @@ window.sendByEmail = async function(orderId, supName, supEmail) {
   const message =
     `Bonjour,\n\nVeuillez trouver ci-dessous notre commande du ${date} :\n\n` +
     items.map(i => `- ${i.name} | UC : ${i.uc||'—'} | Quantité : ${i.qty}`).join('\n') +
-    `\n\nCordialement,\nFLOREAL Le Panoramique`;
+    `\n\n---\nLE PANORAMIQUE - FLOREAL MONT-SAINT-AUBERT\nFloreal Group (Floreal Holidays asbl) TVA : BE0790.387.276\nSiège social : 26-28, Rue Haute – 1000 Bruxelles\nAdresse de livraison : 2, Place – 7542 Mont-Saint-Aubert – Belgique\nE-mail facturation : invoices@florealgroup.be\nTél : +32 69 89 16 16`;
 
   // ── Tentative envoi EmailJS ──────────────────────────────
   if (emailjsReady && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
