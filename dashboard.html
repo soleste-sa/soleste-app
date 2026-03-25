@@ -128,12 +128,12 @@
 
     <div class="kpi-grid">
       <div class="card">
-        <div class="kpi-section-title">🥗 Food Cost — Mois précédent</div>
+        <div class="kpi-section-title">🥗 Food Cost — <span id="kpi-fc-month-label">Mois précédent</span></div>
         <table class="kpi-table"><thead><tr><th class="lbl">Indicateur</th><th>Target</th><th>Actual</th><th>Y-1</th></tr></thead>
         <tbody id="kpi-fc-month"><tr><td colspan="4" style="text-align:center;padding:12px;color:var(--muted);">Chargement…</td></tr></tbody></table>
       </div>
       <div class="card">
-        <div class="kpi-section-title">🥗 Food Cost — YTD</div>
+        <div class="kpi-section-title">🥗 Food Cost — YTD <span id="kpi-fc-ytd-label"></span></div>
         <table class="kpi-table"><thead><tr><th class="lbl">Indicateur</th><th>Target</th><th>Actual</th><th>Y-1</th></tr></thead>
         <tbody id="kpi-fc-ytd"><tr><td colspan="4" style="text-align:center;padding:12px;color:var(--muted);">Chargement…</td></tr></tbody></table>
       </div>
@@ -259,9 +259,13 @@ async function loadKPIs(now) {
   const prevY = now.getMonth() === 0 ? year - 1 : year;
   const ytdEnd = now.getMonth(); // 0 = janvier = ytd de 0 mois = on affiche le mois précédent
 
-  document.getElementById('prev-month-label').textContent = `${MONTHS_FULL[prevM]} ${prevY}`;
-  document.getElementById('kpi-month-label').textContent  = `${MONTHS_FULL[prevM]} ${prevY}`;
-  document.getElementById('kpi-ytd-label').textContent    = ytdEnd > 0 ? `Jan → ${MONTHS_FULL[prevM]} ${year}` : `${MONTHS_FULL[prevM]} ${prevY}`;
+  const monthLabel = `${MONTHS_FULL[prevM]} ${prevY}`;
+  const ytdLabel   = ytdEnd > 0 ? `Jan → ${MONTHS_FULL[prevM]} ${year}` : monthLabel;
+  document.getElementById('prev-month-label').textContent    = monthLabel;
+  document.getElementById('kpi-month-label').textContent     = monthLabel;
+  document.getElementById('kpi-ytd-label').textContent       = ytdLabel;
+  document.getElementById('kpi-fc-month-label').textContent  = monthLabel;
+  document.getElementById('kpi-fc-ytd-label').textContent    = ytdLabel;
 
   // ── Données mois précédent ──────────────────────────────
   const [resM, scM, resM1, fcM, fcM1] = await Promise.all([
