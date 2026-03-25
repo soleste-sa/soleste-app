@@ -101,6 +101,8 @@
 import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { initEstablishment, getActiveEstId, setActiveEstId, estDocKey } from './js/establishment.js';
+import { renderEstSelector } from './js/est-header.js';
 import { toast } from './js/utils.js';
 import { MONTHS, docKey, fmtEur, fmtPct, fmtNum, calcStaffCostCorrection } from './js/kpi.js';
 import { getSettings } from './js/settings.js';
@@ -116,6 +118,13 @@ onAuthStateChanged(auth, async user => {
   const dn = user.displayName || user.email.split('@')[0];
   document.getElementById('user-avatar').textContent = dn.substring(0,2).toUpperCase();
   document.getElementById('user-name').textContent   = dn;
+  // ── Établissement actif ──────────────────────────────────
+  const estInfo = await initEstablishment(user.email);
+  window.__estId   = estInfo.estId   || 'panoramique';
+  window.__estName = estInfo.estName || 'Le Panoramique';
+  window.__isMaster = estInfo.isMaster || false;
+  renderEstSelector(estInfo.establishments, window.__estId, null);
+
   const s = await getSettings().catch(() => ({}));
   hourlyCost = parseFloat(s.hourlyCost) || 0;
   document.getElementById('hourly-badge').textContent = `${hourlyCost.toFixed(2).replace('.',',')} €/h`;

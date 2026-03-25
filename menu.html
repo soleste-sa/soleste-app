@@ -240,6 +240,8 @@ import {
   onSnapshot, serverTimestamp, query, orderBy, addDoc as aDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establishment.js';
+import { renderEstSelector } from './js/est-header.js';
 import { toast, normalize, fuzzyMatch, formatCurrency, formatPercent, openModal, closeModal, setupModalClose, debounce } from './js/utils.js';
 
 window.closeModal = closeModal;
@@ -262,6 +264,13 @@ onAuthStateChanged(auth, async user => {
   const name = user.displayName || user.email.split('@')[0];
   document.getElementById('user-name').textContent = name;
   document.getElementById('user-avatar').textContent = name.slice(0,2).toUpperCase();
+  // ── Établissement actif ──────────────────────────────────
+  const estInfo = await initEstablishment(user.email);
+  window.__estId   = estInfo.estId   || 'panoramique';
+  window.__estName = estInfo.estName || 'Le Panoramique';
+  window.__isMaster = estInfo.isMaster || false;
+  renderEstSelector(estInfo.establishments, window.__estId, null);
+
 
   // Load settings (hourly rate) depuis config/global
   try {

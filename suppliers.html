@@ -178,8 +178,10 @@ import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   collection, doc, addDoc, updateDoc, deleteDoc,
-  getDocs, onSnapshot, query, orderBy, serverTimestamp
+  getDocs, onSnapshot, query, orderBy, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establishment.js';
+import { renderEstSelector } from './js/est-header.js';
 import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, debounce } from './js/utils.js';
 
 window.closeModal = closeModal;
@@ -197,6 +199,13 @@ onAuthStateChanged(auth, async user => {
   const dn = user.displayName || user.email.split('@')[0];
   document.getElementById('user-avatar').textContent = dn.substring(0,2).toUpperCase();
   document.getElementById('user-name').textContent   = dn;
+  // ── Établissement actif ──────────────────────────────────
+  const estInfo = await initEstablishment(user.email);
+  window.__estId   = estInfo.estId   || 'panoramique';
+  window.__estName = estInfo.estName || 'Le Panoramique';
+  window.__isMaster = estInfo.isMaster || false;
+  renderEstSelector(estInfo.establishments, window.__estId, null);
+
   await init();
 });
 
@@ -207,11 +216,11 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
   // Charger les articles pour afficher les liens
-  const artSnap = await getDocs(collection(db, 'articles'));
+  const artSnap = await getDocs(query(collection(db, 'articles'), where('estId','==',window.__estId||'panoramique')));
   allArticles = artSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
   // Écouter les fournisseurs en temps réel
-  onSnapshot(query(collection(db, 'suppliers'), orderBy('name')), snap => {
+  onSnapshot(query(collection(db, 'suppliers'), where('estId','==',window.__estId||'panoramique'), orderBy('name')), snap => {
     allSuppliers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     // Fusionner avec les fournisseurs présents dans articles mais pas encore dans suppliers
     mergeArticleSuppliers();
@@ -330,6 +339,7 @@ async function handleSave() {
 
   const data = {
     name,
+    estId:   window.__estId || 'panoramique',
     phone:   document.getElementById('sup-phone').value.trim(),
     email:   document.getElementById('sup-email').value.trim(),
     contact: document.getElementById('sup-contact').value.trim(),

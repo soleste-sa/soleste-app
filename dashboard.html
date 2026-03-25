@@ -156,6 +156,8 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { collection, getCountFromServer, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { MONTHS, MONTHS_FULL, docKey, fmtEur, fmtPct, fmtNum, calcRoom, calcFnb, calcStaffCostCorrection, calcFoodCost } from './js/kpi.js';
 import { getSettings } from './js/settings.js';
+import { initEstablishment, getActiveEstId, setActiveEstId, estDocKey } from './js/establishment.js';
+import { renderEstSelector } from './js/est-header.js';
 
 let hourlyCost = 0;
 const charts = {};
@@ -165,6 +167,13 @@ onAuthStateChanged(auth, async user => {
   const name = user.displayName || user.email.split('@')[0];
   document.getElementById('user-name').textContent    = name;
   document.getElementById('user-avatar').textContent  = name.slice(0,2).toUpperCase();
+  // ── Établissement actif ──────────────────────────────────
+  const estInfo = await initEstablishment(user.email);
+  window.__estId   = estInfo.estId   || 'panoramique';
+  window.__estName = estInfo.estName || 'Le Panoramique';
+  window.__isMaster = estInfo.isMaster || false;
+  renderEstSelector(estInfo.establishments, window.__estId, null);
+
   document.getElementById('welcome-name').textContent = name;
   const now = new Date();
   const days = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];

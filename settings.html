@@ -282,6 +282,57 @@
           </div>
         </div>
 
+        <!-- Établissements (MASTER only) -->
+        <div class="card settings-section" id="section-establishments" style="display:none;">
+          <div class="settings-section-title">🏨 Établissements</div>
+          <div class="settings-section-desc">Gérer les établissements et leurs membres — visible uniquement depuis le compte MASTER</div>
+
+          <!-- Liste établissements -->
+          <div id="est-list" style="margin-bottom:16px;"></div>
+
+          <!-- Ajouter un établissement -->
+          <div style="background:var(--cream);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px;">
+            <div class="label" style="margin-bottom:10px;">Ajouter un établissement</div>
+            <div style="display:grid;grid-template-columns:1fr 2fr auto;gap:10px;align-items:end;">
+              <div>
+                <label class="form-label">ID (slug)</label>
+                <input type="text" id="new-est-id" class="form-control" placeholder="ex: val-de-poix">
+              </div>
+              <div>
+                <label class="form-label">Nom complet</label>
+                <input type="text" id="new-est-name" class="form-control" placeholder="ex: Hôtel Val-de-Poix">
+              </div>
+              <button class="btn btn-primary" id="btn-add-est">Ajouter</button>
+            </div>
+          </div>
+
+          <!-- Ajouter un membre -->
+          <div style="background:var(--cream);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px;">
+            <div class="label" style="margin-bottom:10px;">Ajouter un utilisateur à un établissement</div>
+            <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:10px;align-items:end;">
+              <div>
+                <label class="form-label">Email utilisateur</label>
+                <input type="email" id="member-email" class="form-control" placeholder="user@example.com">
+              </div>
+              <div>
+                <label class="form-label">Établissement</label>
+                <select id="member-est" class="form-control"></select>
+              </div>
+              <button class="btn btn-primary" id="btn-add-member">Ajouter</button>
+            </div>
+          </div>
+
+          <!-- Migration one-shot -->
+          <div style="background:rgba(200,106,74,.08);border:1px solid rgba(200,106,74,.2);border-radius:var(--radius-lg);padding:14px;">
+            <div class="label" style="color:var(--clay);margin-bottom:6px;">⚠ Migration des données existantes</div>
+            <p class="form-hint" style="margin-bottom:10px;">À exécuter une seule fois pour migrer toutes les données existantes vers l'établissement "panoramique". Cette opération est non-destructive.</p>
+            <button class="btn btn-outline btn-sm" id="btn-migrate" style="border-color:var(--clay);color:var(--clay);">
+              Migrer les données → panoramique
+            </button>
+            <span id="migrate-status" style="font-size:.8rem;color:var(--muted);margin-left:12px;"></span>
+          </div>
+        </div>
+
         <!-- EmailJS -->
         <div class="card settings-section">
           <div class="settings-section-title">✉ EmailJS (envoi commandes)</div>
@@ -312,7 +363,7 @@
           <div class="settings-section-desc">Informations sur l'application</div>
           <table style="width:100%;font-size:.875rem;">
             <tr><td class="text-muted" style="padding:6px 0;">Application</td><td class="fw-600">SOLESTE</td></tr>
-            <tr><td class="text-muted" style="padding:6px 0;">Version</td><td>1.7.9</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0;">Version</td><td>1.8.0</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Propriétaire</td><td>Soleste SA</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Hébergement</td><td>GitHub Pages</td></tr>
             <tr><td class="text-muted" style="padding:6px 0;">Base de données</td><td>Firebase Firestore</td></tr>
@@ -329,6 +380,8 @@
 <script type="module">
 import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { initEstablishment, getActiveEstId, setActiveEstId, listAllEstablishments, createEstablishment, deleteEstablishment, addMemberToEst, removeMemberFromEst, getEstMembers, migrateToMultiTenant } from './js/establishment.js';
+import { renderEstSelector } from './js/est-header.js';
 import { toast, formatCurrency } from './js/utils.js';
 import { getPlaces, createPlace, deletePlace, listenPlaces } from './js/inventory.js';
 import { getSettings, saveSettings } from './js/settings.js';
@@ -344,6 +397,13 @@ onAuthStateChanged(auth, async user => {
   currentUser = user;
   const displayName = user.displayName || user.email.split('@')[0];
   document.getElementById('user-avatar').textContent   = displayName.substring(0,2).toUpperCase();
+  // ── Établissement actif ──────────────────────────────────
+  const estInfo = await initEstablishment(user.email);
+  window.__estId   = estInfo.estId   || 'panoramique';
+  window.__estName = estInfo.estName || 'Le Panoramique';
+  window.__isMaster = estInfo.isMaster || false;
+  renderEstSelector(estInfo.establishments, window.__estId, null);
+
   document.getElementById('user-name').textContent     = displayName;
   document.getElementById('settings-avatar').textContent = displayName.substring(0,2).toUpperCase();
   document.getElementById('settings-displayname').textContent = displayName;
@@ -380,6 +440,7 @@ async function init() {
   loadUsers();
   setupUserBindings();
   loadEmailJSSettings();
+  initEstablishmentsSection();
 
   // Réglages en arrière-plan
   getSettings().then(settings => {
@@ -680,6 +741,97 @@ document.getElementById('btn-save-emailjs')?.addEventListener('click', async () 
     toast('Erreur enregistrement : ' + e.message, 'error');
   }
 });
+
+// ── Gestion des établissements (MASTER) ──────────────────────
+async function initEstablishmentsSection() {
+  if (!window.__isMaster) return;
+  document.getElementById('section-establishments').style.display = '';
+
+  await loadEstList();
+
+  document.getElementById('btn-add-est').addEventListener('click', async () => {
+    const id   = document.getElementById('new-est-id').value.trim().toLowerCase().replace(/\s+/g, '-');
+    const name = document.getElementById('new-est-name').value.trim();
+    if (!id || !name) { toast('ID et nom obligatoires', 'warning'); return; }
+    await createEstablishment(id, name);
+    toast(`Établissement "${name}" créé`, 'success');
+    document.getElementById('new-est-id').value = '';
+    document.getElementById('new-est-name').value = '';
+    await loadEstList();
+  });
+
+  document.getElementById('btn-add-member').addEventListener('click', async () => {
+    const email = document.getElementById('member-email').value.trim();
+    const estId = document.getElementById('member-est').value;
+    if (!email || !estId) { toast('Email et établissement obligatoires', 'warning'); return; }
+    await addMemberToEst(email, estId);
+    toast(`${email} ajouté à ${estId}`, 'success');
+    document.getElementById('member-email').value = '';
+    await loadEstList();
+  });
+
+  document.getElementById('btn-migrate').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-migrate');
+    const status = document.getElementById('migrate-status');
+    if (!confirm('Migrer toutes les données existantes vers "panoramique" ? Cette opération est non-destructive.')) return;
+    btn.disabled = true;
+    status.textContent = 'Migration en cours…';
+    try {
+      const count = await migrateToMultiTenant('panoramique');
+      status.textContent = `✓ ${count} documents migrés`;
+      toast(`Migration terminée : ${count} documents`, 'success');
+    } catch (e) {
+      status.textContent = '✗ Erreur';
+      toast('Erreur migration : ' + e.message, 'error');
+    }
+    btn.disabled = false;
+  });
+}
+
+async function loadEstList() {
+  const ests = await listAllEstablishments();
+  const list = document.getElementById('est-list');
+  const memberSel = document.getElementById('member-est');
+
+  // Mettre à jour le select membres
+  memberSel.innerHTML = ests.filter(e => e.id !== 'master').map(e =>
+    `<option value="${e.id}">${e.name}</option>`
+  ).join('');
+
+  // Afficher la liste
+  list.innerHTML = await Promise.all(ests.map(async e => {
+    const members = await getEstMembers(e.id);
+    const memberList = members.map(m =>
+      `<span style="display:inline-flex;align-items:center;gap:6px;background:white;border:1px solid var(--border);border-radius:99px;padding:2px 10px;font-size:.75rem;margin:2px;">
+        ${m.email}
+        ${e.id !== 'master' ? `<button onclick="removeMember('${m.email}','${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.75rem;padding:0;">×</button>` : ''}
+      </span>`
+    ).join('');
+    return `<div style="background:white;border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <strong style="color:var(--forest);">${e.id === 'master' ? '⚙ MASTER' : '🏨 ' + e.name}</strong>
+          <code style="font-size:.72rem;color:var(--muted);margin-left:8px;">${e.id}</code>
+        </div>
+        ${e.id !== 'master' ? `<button class="btn btn-danger btn-sm" onclick="removeEst('${e.id}')">Supprimer</button>` : ''}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;">${memberList || '<span style="color:var(--muted);font-size:.78rem;">Aucun membre</span>'}</div>
+    </div>`;
+  })).then(arr => arr.join(''));
+}
+
+window.removeEst = async (estId) => {
+  if (!confirm(`Supprimer l'établissement "${estId}" ? Les données ne seront pas supprimées.`)) return;
+  await deleteEstablishment(estId);
+  toast('Établissement supprimé', 'success');
+  await loadEstList();
+};
+
+window.removeMember = async (email, estId) => {
+  await removeMemberFromEst(email, estId);
+  toast(`${email} retiré de ${estId}`, 'success');
+  await loadEstList();
+};
 
 // ── Nom d'affichage ──────────────────────────────────────────
 document.getElementById('btn-update-name').addEventListener('click', async () => {

@@ -423,6 +423,8 @@
 <script type="module">
 import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establishment.js';
+import { renderEstSelector } from './js/est-header.js';
 import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, formatCurrency, formatDate, formatDateTime, showLoading, hideLoading } from './js/utils.js';
 import {
   getPlaces, listenPlaces,
@@ -457,6 +459,13 @@ onAuthStateChanged(auth, async user => {
   const displayName = user.displayName || user.email.split('@')[0];
   if (avatar) avatar.textContent = displayName.substring(0,2).toUpperCase();
   if (name)   name.textContent   = displayName;
+  // ── Établissement actif ──────────────────────────────────
+  const estInfo = await initEstablishment(user.email);
+  window.__estId   = estInfo.estId   || 'panoramique';
+  window.__estName = estInfo.estName || 'Le Panoramique';
+  window.__isMaster = estInfo.isMaster || false;
+  renderEstSelector(estInfo.establishments, window.__estId, null);
+
 
   await init();
 });

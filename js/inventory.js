@@ -11,30 +11,30 @@ import {
 // Collections
 const COL_INV   = 'inventories';
 const COL_LINES = 'inventory_lines';
-const COL_PLACES = 'places';
+const COL_PLACES = () => `places_${(typeof window !== 'undefined' && window.__estId) || 'panoramique'}`;
 
 // ──────────────────────────────────────────────────────────────
 // PLACES (emplacements de stock)
 // ──────────────────────────────────────────────────────────────
 export async function getPlaces() {
-  const snap = await getDocs(query(collection(db, COL_PLACES), orderBy('nom')));
+  const snap = await getDocs(query(collection(db, COL_PLACES()), orderBy('nom')));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 export async function createPlace(nom) {
-  return await addDoc(collection(db, COL_PLACES), {
+  return await addDoc(collection(db, COL_PLACES()), {
     nom: String(nom).trim(),
     createdAt: serverTimestamp()
   });
 }
 
 export async function deletePlace(id) {
-  await deleteDoc(doc(db, COL_PLACES, id));
+  await deleteDoc(doc(db, COL_PLACES(), id));
 }
 
 export function listenPlaces(callback) {
   return onSnapshot(
-    query(collection(db, COL_PLACES), orderBy('nom')),
+    query(collection(db, COL_PLACES()), orderBy('nom')),
     snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   );
 }
