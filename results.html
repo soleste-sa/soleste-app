@@ -112,10 +112,12 @@ import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { toast } from './js/utils.js';
-import { MONTHS, docKey, fmtEur, fmtPct, fmtNum, calcRoom, calcFnb } from './js/kpi.js';
+import { getSettings } from './js/settings.js';
+import { MONTHS, docKey, fmtEur, fmtPct, fmtNum, calcRoom, calcFnb, calcStaffCostCorrection } from './js/kpi.js';
 
 window.signOut = signOut;
 let currentYear = new Date().getFullYear();
+let hourlyCost  = 0;
 let yearData    = {}; // { "2026_01": {...}, ... }
 let corrData    = {}; // staff cost corrigé
 let saveTimer   = null;
@@ -126,6 +128,8 @@ onAuthStateChanged(auth, async user => {
   const dn = user.displayName || user.email.split('@')[0];
   document.getElementById('user-avatar').textContent = dn.substring(0,2).toUpperCase();
   document.getElementById('user-name').textContent   = dn;
+  const s = await getSettings().catch(() => ({}));
+  hourlyCost = parseFloat(s.hourlyCost) || 0;
   await loadYear(currentYear);
 });
 
@@ -192,7 +196,7 @@ function buildRows(year) {
   rows.push({ type: 'input', section: 'room', field: 'roomsAvail',    label: 'Chambres disponibles', fmt: 'num' });
   rows.push({ type: 'auto',  section: 'room', field: 'arr',           label: 'ARR', fmt: 'eur2' });
   rows.push({ type: 'auto',  section: 'room', field: 'revpar',        label: 'RevPAR', fmt: 'eur2' });
-  rows.push({ type: 'auto',  section: 'room', field: 'occupancy',     label: "Taux d'occupation", fmt: 'pct' });
+  rows.push({ type: 'auto_budget_input', section: 'room', field: 'occupancy', label: "Taux d'occupation", fmt: 'pct' });
 
   // ── F&B ──
   rows.push({ type: 'section', label: '🍽 F&B' });
@@ -233,10 +237,21 @@ function renderRow(row, year) {
       cells += `<td class="col-A"><input type="number" step="any" value="${aVal}" data-year="${year}" data-month="${m}" data-section="${row.section}" data-field="${row.field}" onchange="handleInput(this)"></td>`;
       // Corrigé (lecture seule — calculé depuis staffcost)
       const corrVal = getCorrectedValue(sc, row.section, row.field, d);
-      cells += `<td class="col-C"><span class="computed-val">${corrVal !== null ? corrVal : '—'}</span></td>`;
+      cells += `<td class="col-C"><span class="computed-val">${corrVal !== null ? fmt(corrVal, row.fmt) : '—'}</span></td>`;
       // Y-1 (lecture seule — chargé depuis Firestore année précédente)
       const y1Val = dY1[row.field];
       cells += `<td class="col-Y1">${y1Val !== undefined && y1Val !== 0 ? fmt(y1Val, row.fmt) : '—'}</td>`;
+    } else if (row.type === 'auto_budget_input') {
+      // Budget = saisie manuelle (ex: taux d'occupation cible)
+      // Actual / Corrigé / Y-1 = calculé automatiquement
+      const tVal = dT[row.field] ?? '';
+      cells += `<td class="col-T month-group"><input type="number" step="0.1" min="0" max="100" value="${tVal}" data-year="${year}" data-month="${m}" data-section="${row.section}_target" data-field="${row.field}" onchange="handleInput(this)" style="font-style:normal;"></td>`;
+      const calcA  = getAutoValue(d, row.section, row.field);
+      const corrSc = getCorrectedCalcValue(sc, row.section, row.field, d);
+      const calcY1 = getAutoValue(dY1, row.section, row.field);
+      cells += `<td class="col-A auto-row"><span class="computed-val">${fmt(calcA, row.fmt)}</span></td>`;
+      cells += `<td class="col-C auto-row"><span class="computed-val">${corrSc !== null ? fmt(corrSc, row.fmt) : '—'}</span></td>`;
+      cells += `<td class="col-Y1 auto-row">${fmt(calcY1, row.fmt)}</td>`;
     } else {
       // Auto-calculé
       const calcA = getAutoValue(d, row.section, row.field);
@@ -251,7 +266,7 @@ function renderRow(row, year) {
     }
   }
 
-  const cls = row.type === 'auto' ? 'auto-row' : '';
+  const cls = (row.type === 'auto' || row.type === 'auto_budget_input') ? 'auto-row' : '';
   return `<tr class="${cls}">${cells}</tr>`;
 }
 
@@ -270,22 +285,28 @@ function getAutoValue(d, section, field) {
 }
 
 function getCorrectedValue(sc, section, field, actual) {
-  // Retourne la valeur corrigée pour les champs de payroll
-  if (!sc[section]) return null;
-  const corr = sc[section];
-  if (field === 'payrollFixed') return corr.payrollFixed ?? actual[field] ?? null;
-  if (field === 'payrollVar')   return corr.payrollVar   ?? actual[field] ?? null;
-  if (field === 'interim')      return corr.interim       ?? actual[field] ?? null;
+  // Payroll fixe corrigé = actual.payrollFixed - déduction Staff Cost
+  if (field === 'payrollFixed') {
+    const scSec = sc?.[section];
+    if (!scSec || !Object.keys(scSec).length) return null;
+    const { deduction } = calcStaffCostCorrection(scSec, hourlyCost);
+    if (!deduction) return null;
+    const actualPF = parseFloat(actual?.payrollFixed) || 0;
+    return actualPF - deduction;
+  }
+  // Payroll variable et intérim : pas de correction Staff Cost, on n'affiche rien
   return null;
 }
 
 function getCorrectedCalcValue(sc, section, field, actual) {
-  if (!sc[section]) return null;
+  const scSec = sc?.[section];
+  if (!scSec || !Object.keys(scSec).length) return null;
+  const { deduction } = calcStaffCostCorrection(scSec, hourlyCost);
+  if (!deduction && deduction !== 0) return null;
+  const corrPF = (parseFloat(actual?.payrollFixed) || 0) - deduction;
   const corrD = {
     ...actual,
-    payrollFixed: sc[section]?.payrollFixed ?? actual?.payrollFixed,
-    payrollVar:   sc[section]?.payrollVar   ?? actual?.payrollVar,
-    interim:      sc[section]?.interim       ?? actual?.interim,
+    payrollFixed: corrPF,
   };
   return getAutoValue(corrD, section, field);
 }
