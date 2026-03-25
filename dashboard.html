@@ -107,7 +107,15 @@
     <!-- KPI Tables -->
     <div class="kpi-grid">
       <div class="card">
-        <div class="kpi-section-title">📅 Mois précédent <span id="kpi-month-label"></span></div>
+        <div class="kpi-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>📅 Mois analysé <span id="kpi-month-label"></span></span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button id="btn-prev-month" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:var(--transition);" title="Mois précédent">‹</button>
+            <select id="sel-month" style="padding:3px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.78rem;font-family:var(--font-body);color:var(--charcoal);background:white;cursor:pointer;"></select>
+            <select id="sel-year" style="padding:3px 8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:.78rem;font-family:var(--font-body);color:var(--charcoal);background:white;cursor:pointer;"></select>
+            <button id="btn-next-month" style="width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:var(--transition);" title="Mois suivant">›</button>
+          </div>
+        </div>
         <table class="kpi-table"><thead><tr><th class="lbl">Indicateur</th><th>Target</th><th>Actual</th><th>Corrigé</th><th>Y-1</th></tr></thead>
         <tbody id="kpi-month-body"><tr><td colspan="5" style="text-align:center;padding:16px;color:var(--muted);">Chargement…</td></tr></tbody></table>
       </div>
@@ -164,6 +172,7 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('welcome-date').textContent = `${days[now.getDay()]} ${now.getDate()} ${mos[now.getMonth()]} ${now.getFullYear()}`;
   const s = await getSettings().catch(() => ({}));
   hourlyCost = parseFloat(s.hourlyCost) || 0;
+  initMonthSelector(now);
   await Promise.all([loadCounts(), loadKPIs(now)]);
 });
 
@@ -191,6 +200,57 @@ async function loadCounts() {
 
 async function getMonthDoc(col, year, month) {
   return getDoc(doc(db, col, docKey(year, month))).then(d => d.exists() ? d.data() : {}).catch(() => ({}));
+}
+
+// Variables de sélection du mois analysé
+let selectedMonth = null;
+let selectedYear  = null;
+
+function initMonthSelector(now) {
+  const curYear = now.getFullYear();
+  const defM = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const defY = now.getMonth() === 0 ? curYear - 1 : curYear;
+  selectedMonth = defM;
+  selectedYear  = defY;
+
+  // Remplir les selects
+  const selMonth = document.getElementById('sel-month');
+  const selYear  = document.getElementById('sel-year');
+  MONTHS_FULL.forEach((m, i) => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = m;
+    if (i === defM) opt.selected = true;
+    selMonth.appendChild(opt);
+  });
+  for (let y = curYear - 3; y <= curYear + 1; y++) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if (y === defY) opt.selected = true;
+    selYear.appendChild(opt);
+  }
+
+  selMonth.addEventListener('change', () => { selectedMonth = parseInt(selMonth.value); refreshKPIs(now); });
+  selYear.addEventListener('change',  () => { selectedYear  = parseInt(selYear.value);  refreshKPIs(now); });
+  document.getElementById('btn-prev-month').addEventListener('click', () => {
+    if (selectedMonth === 0) { selectedMonth = 11; selectedYear--; }
+    else { selectedMonth--; }
+    selMonth.value = selectedMonth;
+    selYear.value  = selectedYear;
+    refreshKPIs(now);
+  });
+  document.getElementById('btn-next-month').addEventListener('click', () => {
+    if (selectedMonth === 11) { selectedMonth = 0; selectedYear++; }
+    else { selectedMonth++; }
+    selMonth.value = selectedMonth;
+    selYear.value  = selectedYear;
+    refreshKPIs(now);
+  });
+}
+
+async function refreshKPIs(now) {
+  // Construire un objet "date" simulé pour le mois sélectionné
+  const fakeNow = new Date(selectedYear, selectedMonth + 1, 1); // 1er du mois suivant
+  await loadKPIs(fakeNow);
 }
 
 async function loadKPIs(now) {
