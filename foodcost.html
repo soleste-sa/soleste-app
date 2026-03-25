@@ -144,6 +144,7 @@ function renderTable(year) {
   const thead = document.getElementById('fc-thead');
   const tbody  = document.getElementById('fc-tbody');
 
+  // En-tête : 1 colonne Actual par mois
   let hRow1 = '<tr><th class="col-label" rowspan="2">Indicateur</th>';
   let hRow2 = '<tr>';
   for (let m = 0; m < 12; m++) {
@@ -169,10 +170,10 @@ function renderTable(year) {
   let html = '';
   for (const sec of sections) {
     const defaultPct = sec.key === 'bev' ? 22 : 32;
-    html += `<tr class="section-header"><td colspan="${1 + 12*2}">${sec.label}</td></tr>`;
+    html += `<tr class="section-header"><td colspan="${1 + 12}">${sec.label}</td></tr>`;
+
     // Ligne % Budget cible
-    html += `<tr style="background:rgba(108,125,54,.08);">
-      <td class="col-label" style="font-weight:600;color:var(--olive);">% Budget cible</td>`;
+    html += `<tr style="background:rgba(108,125,54,.08);"><td class="col-label" style="font-weight:600;color:var(--olive);">% Budget cible</td>`;
     for (let m2 = 0; m2 < 12; m2++) {
       const key2 = docKey(year, m2);
       const bPct = fcData[key2]?.[sec.key + '_budgetpct'] ?? defaultPct;
@@ -183,34 +184,27 @@ function renderTable(year) {
       </td>`;
     }
     html += `</tr>`;
+
+    // Lignes de données
     for (const f of fields) {
       const isAuto = f.type !== 'input';
       html += `<tr class="${isAuto ? 'auto-row' : ''}"><td class="col-label">${f.label}</td>`;
       for (let m = 0; m < 12; m++) {
-        const key  = docKey(year, m);
-        const key1 = docKey(year-1, m);
-        const d    = fcData[key]?.[sec.key]            || {};
-        const dT   = fcData[key]?.[sec.key + '_target'] || {};
-        const dY1  = y1Data[key1]?.[sec.key]           || {};
-        const calc  = calcFoodCost(d);
-        const calcT = calcFoodCost(dT);
-        const calcY1 = calcFoodCost(dY1);
+        const key = docKey(year, m);
+        const d   = fcData[key]?.[sec.key] || {};
+        const calc = calcFoodCost(d);
 
         if (f.type === 'input') {
           const aVal = d[f.field] ?? '';
-          const tVal = dT[f.field] ?? '';
-            html += `<td class="col-T month-group"><input type="number" step="any" min="0" value="${tVal}" data-year="${year}" data-month="${m}" data-section="${sec.key}_target" data-field="${f.field}" onchange="handleInput(this)"></td>`;
-          html += `<td class="col-A"><input type="number" step="any" min="0" value="${aVal}" data-year="${year}" data-month="${m}" data-section="${sec.key}" data-field="${f.field}" onchange="handleInput(this)"></td>`;
-          html += `<td class="col-Y1">${y1Val !== undefined ? fmtEur(y1Val) : '—'}</td>`;
+          html += `<td class="col-A month-group"><input type="number" step="any" min="0" value="${aVal}" data-year="${year}" data-month="${m}" data-section="${sec.key}" data-field="${f.field}" onchange="handleInput(this)"></td>`;
         } else if (f.type === 'auto_eur') {
-          html += `<td class="col-A month-group"><span class="computed-val">${calc.cost !== undefined ? fmtEur(calc.cost) : '—'}</span></td>`;
+          html += `<td class="col-A month-group"><span class="computed-val">${calc.cost !== undefined && calc.cost !== 0 ? fmtEur(calc.cost) : '—'}</span></td>`;
         } else if (f.type === 'auto_pct') {
-          const color  = fcColor(calc.costPct,  sec.isBev);
-          const colorT = fcColor(calcT.costPct, sec.isBev);
-            html += `<td class="col-A month-group"><span class="computed-val" style="color:${color};font-size:.9rem;">${calc.costPct !== null ? fmtPct(calc.costPct) : '—'}</span></td>`;
+          const color = fcColor(calc.costPct, sec.isBev);
+          html += `<td class="col-A month-group"><span class="computed-val" style="color:${color};font-size:.9rem;">${calc.costPct !== null && calc.costPct !== undefined ? fmtPct(calc.costPct) : '—'}</span></td>`;
         }
       }
-      html += '</tr>';
+      html += `</tr>`;
     }
   }
   tbody.innerHTML = html;
@@ -261,7 +255,6 @@ function renderCharts(year) {
 
   for (let m = 0; m < 12; m++) {
     const key  = docKey(year, m);
-    const key1 = docKey(year-1, m);
     foodActual.push(calcFoodCost(fcData[key]?.food || {}).costPct ?? null);
     foodTarget.push(calcFoodCost(fcData[key]?.food_target || {}).costPct ?? null);
     bevActual.push(calcFoodCost(fcData[key]?.bev || {}).costPct ?? null);
