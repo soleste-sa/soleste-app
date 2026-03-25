@@ -12,8 +12,10 @@ const COL = 'articles';
 
 // ── Créer un article ────────────────────────────────────────
 export async function createArticle(data) {
+  const estId = window.__estId || 'panoramique';
   return await addDoc(collection(db, COL), {
     ...sanitizeArticle(data),
+    estId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
@@ -58,6 +60,7 @@ export function listenArticles(callback) {
 // ── Import batch depuis Excel/CSV ───────────────────────────
 // rows = [{ nom, uc, us, ratioUsUc, prixUc, fournisseur, codeArticle, codeBarres, categorie }]
 export async function importArticles(rows) {
+  const estId    = window.__estId || 'panoramique';
   const existing = await getAllArticles();
   const byName   = {};
   existing.forEach(a => { byName[a.nom?.toLowerCase().trim()] = a; });
@@ -80,6 +83,7 @@ export async function importArticles(rows) {
       } else {
         batch.set(doc(collection(db, COL)), {
           ...sanitizeArticle(row),
+          estId,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
@@ -96,6 +100,7 @@ export async function importArticles(rows) {
 
 // ── Upsert articles depuis OCR (avec statut par ligne) ─────
 export async function upsertArticlesFromOcr(validatedRows) {
+  const estId    = window.__estId || 'panoramique';
   const existing = await getAllArticles();
   const byName   = {};
   existing.forEach(a => { byName[a.nom?.toLowerCase().trim()] = a; });
@@ -116,6 +121,7 @@ export async function upsertArticlesFromOcr(validatedRows) {
     } else {
       batch.set(doc(collection(db, COL)), {
         ...sanitizeArticle(row),
+        estId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
