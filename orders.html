@@ -57,6 +57,80 @@
     .cart-empty { padding: 32px; text-align: center; color: var(--muted); font-size: .875rem; }
     .cart-footer { padding: 16px; border-top: 1px solid var(--border); }
 
+    /* ── Mobile nouvelle commande ── */
+    @media (max-width: 768px) {
+      .order-layout {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+      }
+      /* Sur mobile, le panier devient une barre fixe en bas */
+      .cart-panel {
+        position: fixed !important;
+        bottom: 0; left: 0; right: 0;
+        border-radius: 0 !important;
+        top: auto !important;
+        z-index: 180;
+        box-shadow: 0 -4px 20px rgba(0,0,0,.15);
+        max-height: 55vh;
+        display: flex;
+        flex-direction: column;
+        transform: translateY(calc(100% - 62px));
+        transition: transform .3s cubic-bezier(.4,0,.2,1);
+      }
+      .cart-panel.cart-expanded {
+        transform: translateY(0);
+      }
+      /* Handle pour tirer le panier */
+      .cart-header {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+      .cart-header::before {
+        content: '';
+        display: block;
+        width: 32px;
+        height: 3px;
+        background: rgba(255,255,255,.3);
+        border-radius: 2px;
+        margin: 0 auto 10px;
+      }
+      .cart-items {
+        max-height: none !important;
+        overflow-y: auto;
+        flex: 1;
+      }
+      /* Espace sous la liste articles pour ne pas être caché par le panier */
+      #order-articles-grid {
+        padding-bottom: 80px !important;
+        grid-template-columns: 1fr !important;
+      }
+      /* Recherche + filtres compacts */
+      .order-layout .toolbar {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .order-layout .toolbar .search-bar {
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      /* Article item simplifié sur mobile */
+      .article-item {
+        padding: 12px 14px !important;
+        min-height: 56px;
+      }
+      .add-btn {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px;
+        font-size: 1.2rem !important;
+      }
+      /* Bouton Annuler + titre plus compact */
+      #view-new-order > div:first-child {
+        margin-bottom: 12px !important;
+      }
+    }
+
     /* ── Articles grille ── */
     .article-item {
       display: flex;
@@ -344,6 +418,15 @@ async function init() {
 
   setupModalClose('modal-order');
   document.getElementById('btn-new-order').addEventListener('click', showNewOrder);
+
+  // Mobile : toggle panier au tap sur le cart-header
+  document.addEventListener('click', e => {
+    if (window.innerWidth > 768) return;
+    if (e.target.closest('.cart-header')) {
+      const panel = document.querySelector('.cart-panel');
+      if (panel) panel.classList.toggle('cart-expanded');
+    }
+  });
   document.getElementById('btn-cancel-order').addEventListener('click', showHistory);
   document.getElementById('btn-validate-order').addEventListener('click', validateOrder);
   document.getElementById('order-search').addEventListener('input', debounce(renderArticles, 200));
@@ -416,6 +499,12 @@ window.addToCart = function(articleId) {
 function renderCart() {
   const ids = Object.keys(cart);
   document.getElementById('cart-count').textContent = ids.length;
+
+  // Mobile : montrer le panier si articles présents
+  if (window.innerWidth <= 768) {
+    const panel = document.querySelector('.cart-panel');
+    if (panel) panel.classList.toggle('cart-expanded', ids.length > 0);
+  }
 
   const container = document.getElementById('cart-items');
   if (!ids.length) {

@@ -505,18 +505,21 @@ function renderTable() {
       const priceUS = (a.ratio && a.priceUC) ? (a.priceUC / a.ratio) : 0;
       const isIncomplete = !a.priceUC || !a.ratio || !a.us;
       const alertDot = isIncomplete ? `<span style="color:var(--warning);margin-left:6px;font-size:.85rem;">⚠</span>` : '';
-      const catColors = { FOOD:'var(--olive)', BEVERAGE:'var(--forest)', CLEANING:'var(--clay)', 'ONE WAY':'var(--muted)', OFFICE:'var(--muted)' };
+      const catColors = { FOOD:'var(--olive)', BEVERAGE:'var(--forest)', CLEANING:'var(--clay)', 'ONE WAY':'#888', OFFICE:'#888' };
       const catLabels = { FOOD:'Food', BEVERAGE:'Boisson', CLEANING:'Entretien', 'ONE WAY':'One Way', OFFICE:'Bureau' };
+      const subParts = [
+        a.supplier ? escHtml(a.supplier) : null,
+        a.uc       ? escHtml(a.uc)       : null,
+      ].filter(Boolean).join(' · ');
       return `<div class="article-card-mob" onclick="editArticle('${a.id}')">
         <div class="art-card-main">
           <div class="art-card-name">${escHtml(a.name)}${alertDot}</div>
           <div class="art-card-sub">
-            <span style="background:${catColors[a.category]||'var(--muted)'};color:white;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600;">${catLabels[a.category]||a.category}</span>
-            ${a.supplier ? `<span>${escHtml(a.supplier)}</span>` : ''}
-            ${a.us ? `<span>${escHtml(a.us)}</span>` : ''}
+            <span class="art-cat-badge" style="background:${catColors[a.category]||'#888'};">${catLabels[a.category]||a.category}</span>
+            ${subParts ? `<span class="art-card-supplier">${subParts}</span>` : ''}
           </div>
         </div>
-        <div class="art-card-price">${a.priceUC ? formatCurrency(a.priceUC) : '<span style="color:var(--warning);font-size:.8rem;">— €</span>'}</div>
+        <div class="art-card-price">${a.priceUC ? formatCurrency(a.priceUC) : '<span class="art-price-missing">— €</span>'}</div>
       </div>`;
     }).join('');
     // FAB ajout article

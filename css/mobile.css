@@ -27,24 +27,27 @@
   /* ─── Header mobile ───────────────────────────────────────── */
   .app-header {
     height: var(--mob-header-h) !important;
-    padding: 0 16px !important;
-    gap: 12px !important;
+    padding: 0 12px !important;
+    gap: 8px !important;
     position: sticky;
     top: 0;
     z-index: 200;
   }
   .app-header .logo {
-    font-size: 1.3rem !important;
+    font-size: 1.25rem !important;
     flex: 1;
     text-align: center;
+    letter-spacing: .04em;
   }
-  /* Cacher établissement du header sur mobile (déplacé sous header) */
+  /* Cacher établissement du header sur mobile (déplacé dans la bannière) */
   #est-selector-wrap { display: none !important; }
-  /* Cacher déconnexion texte, garder icône */
-  #logout-btn span, #logout-btn .logout-label { display: none !important; }
-  #logout-btn { padding: 6px !important; }
-  .user-badge { gap: 0 !important; }
+  /* Cacher déconnexion texte ET icône — le drawer suffit */
+  #logout-btn { display: none !important; }
+  /* Cacher nom utilisateur */
   #user-name  { display: none !important; }
+  /* Avatar plus petit */
+  .user-avatar { width: 28px !important; height: 28px !important; font-size: .72rem !important; }
+  .user-badge  { gap: 0 !important; }
 
   /* ─── Bannière établissement (sous header) ────────────────── */
   .mob-est-banner {
@@ -196,10 +199,23 @@
   .page-subtitle { font-size: .8rem !important; }
   .page-header   { margin-bottom: 16px !important; }
 
-  /* ─── Boutons header page ─────────────────────────────────── */
-  .page-header .btn span,
-  .page-header .btn-label { display: none; }
-  .page-header .btn { padding: 8px 10px !important; }
+  /* ─── Page header : titre + boutons ────────────────────────── */
+  .page-header {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+  .page-header > div:last-child {
+    display: flex !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+  /* Cacher le texte des boutons secondaires, garder icônes */
+  .page-header .btn-secondary svg + *,
+  .page-header .btn-secondary span { display: none !important; }
+  .page-header .btn-secondary { padding: 8px 10px !important; min-width: 38px; }
+  /* Bouton primaire : garder le texte court */
+  .page-header .btn-primary { font-size: .82rem !important; padding: 8px 14px !important; }
 
   /* ─── Cards & grids ───────────────────────────────────────── */
   .form-row, .form-row-3, .grid-2, .grid-3 {
@@ -281,7 +297,7 @@
   /* ─── Barre de recherche article ─────────────────────────── */
   .inv-search-bar {
     position: sticky;
-    top: calc(var(--mob-header-h) + 29px); /* header + banner est */
+    top: calc(var(--mob-header-h) + 29px);
     z-index: 150;
     background: var(--cream);
     padding: 10px 0 8px;
@@ -571,42 +587,62 @@
     background: white;
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 14px 16px;
+    padding: 13px 14px;
     margin-bottom: 8px;
     display: flex;
     align-items: center;
     gap: 12px;
     cursor: pointer;
-    transition: box-shadow .15s, transform .1s;
     -webkit-tap-highlight-color: transparent;
+    transition: background .1s;
   }
-  .article-card-mob:active {
-    transform: scale(.99);
-    box-shadow: 0 1px 4px rgba(0,0,0,.08);
-  }
+  .article-card-mob:active { background: var(--cream-dk); }
   .article-card-mob .art-card-main { flex: 1; min-width: 0; }
   .article-card-mob .art-card-name {
-    font-size: .92rem;
+    font-size: .9rem;
     font-weight: 600;
     color: var(--charcoal);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    margin-bottom: 4px;
   }
   .article-card-mob .art-card-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .art-cat-badge {
+    display: inline-block;
+    color: white;
+    padding: 1px 8px;
+    border-radius: 20px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .art-card-supplier {
     font-size: .75rem;
     color: var(--muted);
-    margin-top: 2px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .article-card-mob .art-card-price {
-    font-size: .9rem;
+  .art-card-price {
+    font-size: .88rem;
     font-weight: 700;
     color: var(--forest);
     white-space: nowrap;
     flex-shrink: 0;
+  }
+  .art-price-missing {
+    color: var(--warning);
+    font-size: .78rem;
+    font-weight: 500;
   }
 
   /* ─── FAB (Floating Action Button) ───────────────────────── */
