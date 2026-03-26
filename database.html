@@ -39,6 +39,34 @@
     .sortable { cursor:pointer; user-select:none; }
     .sortable:hover { color:var(--forest); }
   </style>
+  <style>
+    /* ── Boutons action base articles ── */
+    .db-action-btn {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 8px 14px !important;
+      min-width: 88px;
+      line-height: 1;
+    }
+    .db-action-btn svg { flex-shrink: 0; }
+    .db-btn-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      font-size: .82rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .db-btn-label small {
+      font-size: .67rem;
+      font-weight: 400;
+      opacity: .72;
+    }
+  </style>
 </head>
 <body>
 <div class="app-layout">
@@ -99,44 +127,52 @@
 
   <!-- Main -->
   <main class="app-main">
-    <div class="page-header">
+    <div class="page-header" style="align-items:flex-start;">
       <div>
         <div class="page-title">Base articles</div>
         <div class="page-subtitle">Gestion des produits, prix et fournisseurs</div>
       </div>
-      <div class="flex gap-8">
-        <button class="btn btn-secondary" id="btn-import-excel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Import Excel/CSV
+      <div class="flex gap-8" style="flex-wrap:wrap;justify-content:flex-end;">
+        <button class="btn btn-secondary db-action-btn" id="btn-import-excel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="db-btn-label">Importer<small>Excel / CSV</small></span>
         </button>
-        <button class="btn btn-secondary" id="btn-ocr">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3L14.5 4z"/><circle cx="12" cy="13" r="3"/></svg>
-          Bon de livraison (OCR)
+        <button class="btn btn-secondary db-action-btn" id="btn-export-excel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span class="db-btn-label">Exporter<small>Excel / CSV</small></span>
         </button>
-        <button class="btn btn-primary" id="btn-new-article">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nouvel article
+        <button class="btn btn-secondary db-action-btn" id="btn-ocr">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3L14.5 4z"/><circle cx="12" cy="13" r="3"/></svg>
+          <span class="db-btn-label">Bon livraison<small>OCR</small></span>
+        </button>
+        <button class="btn btn-primary db-action-btn" id="btn-new-article">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span class="db-btn-label">Ajouter<small>un article</small></span>
         </button>
       </div>
     </div>
 
     <!-- Filters & Search -->
-    <div class="filter-bar">
-      <div class="search-bar" style="max-width:300px;">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <!-- Ligne 1 : barre de recherche pleine largeur -->
+      <div class="search-bar" style="max-width:100%;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="search-input" placeholder="Rechercher un article…">
       </div>
-      <button class="filter-btn active" data-cat="ALL">Tous</button>
-      <button class="filter-btn" data-cat="INCOMPLETE" style="border-color:var(--warning);color:var(--warning);" id="filter-incomplete">
-        ⚠ À compléter
-        <span id="incomplete-count" style="background:var(--warning);color:white;border-radius:99px;padding:1px 6px;font-size:.7rem;margin-left:4px;"></span>
-      </button>
-      <button class="filter-btn" data-cat="FOOD">Food</button>
-      <button class="filter-btn" data-cat="BEVERAGE">Boisson</button>
-      <button class="filter-btn" data-cat="CLEANING">Entretien</button>
-      <button class="filter-btn" data-cat="ONE WAY">One Way</button>
-      <button class="filter-btn" data-cat="OFFICE">Bureau</button>
-      <span class="text-muted" style="margin-left:auto;font-size:.8rem;" id="count-label">–</span>
+      <!-- Ligne 2 : filtres + compteur -->
+      <div class="filter-bar" style="margin-bottom:0;">
+        <button class="filter-btn active" data-cat="ALL">Tous</button>
+        <button class="filter-btn" data-cat="INCOMPLETE" style="border-color:var(--warning);color:var(--warning);" id="filter-incomplete">
+          ⚠ À compléter
+          <span id="incomplete-count" style="background:var(--warning);color:white;border-radius:99px;padding:1px 6px;font-size:.7rem;margin-left:4px;"></span>
+        </button>
+        <button class="filter-btn" data-cat="FOOD">Food</button>
+        <button class="filter-btn" data-cat="BEVERAGE">Boisson</button>
+        <button class="filter-btn" data-cat="CLEANING">Entretien</button>
+        <button class="filter-btn" data-cat="ONE WAY">One Way</button>
+        <button class="filter-btn" data-cat="OFFICE">Bureau</button>
+        <span class="text-muted" style="margin-left:auto;font-size:.8rem;" id="count-label">–</span>
+      </div>
     </div>
 
     <!-- Table -->
@@ -692,6 +728,59 @@ async function logActivity(module, message) {
 
 // ══ IMPORT Excel/CSV ═════════════════════════════════════════
 document.getElementById('btn-import-excel').addEventListener('click', () => openModal('modal-import'));
+
+// ── Export Excel/CSV ─────────────────────────────────────────
+document.getElementById('btn-export-excel').addEventListener('click', () => {
+  if (!allArticles || !allArticles.length) {
+    toast('Aucun article à exporter', 'warning');
+    return;
+  }
+
+  // En-têtes — nom en premier, puis tous les autres champs
+  const headers = [
+    'Nom article', 'Catégorie', 'Fournisseur', 'UC', 'US',
+    'Ratio US/UC', 'Prix UC (€ HTVA)', 'Prix US (€ HTVA)',
+    'Code article', 'Code-barre'
+  ];
+
+  const rows = allArticles.map(a => {
+    const priceUS = (a.ratio && a.priceUC) ? (a.priceUC / a.ratio) : 0;
+    const catLabels = { FOOD:'Food', BEVERAGE:'Boisson', CLEANING:'Entretien', 'ONE WAY':'One Way', OFFICE:'Bureau' };
+    return [
+      a.name        || '',
+      catLabels[a.category] || a.category || '',
+      a.supplier    || '',
+      a.uc          || '',
+      a.us          || '',
+      a.ratio       || '',
+      a.priceUC     || '',
+      priceUS       ? priceUS.toFixed(4) : '',
+      a.supplierCode|| '',
+      a.barcode     || '',
+    ];
+  });
+
+  // Construire CSV (séparateur ; pour Excel FR)
+  const escape = v => {
+    const s = String(v).replace(/"/g, '""');
+    return s.includes(';') || s.includes('"') || s.includes('
+') ? `"${s}"` : s;
+  };
+  const csv = [headers, ...rows].map(r => r.map(escape).join(';')).join('
+');
+
+  // Télécharger
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const est  = window.__estId || 'articles';
+  const date = new Date().toISOString().slice(0, 10);
+  a.href     = url;
+  a.download = `base-articles-${est}-${date}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`${allArticles.length} articles exportés`, 'success');
+});
 setupModalClose('modal-import');
 
 const importDropZone = document.getElementById('import-drop-zone');

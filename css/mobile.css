@@ -169,12 +169,14 @@
      BASE ARTICLES
      ══════════════════════════════════════════════════════════ */
 
-  /* Boutons Import/OCR → icône seule */
+  /* Boutons Import/OCR → icône seule, texte masqué via overflow */
   #btn-import-excel, #btn-ocr {
     padding: 9px 11px !important;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 42px !important;
+    min-width: 42px !important;
   }
-  #btn-import-excel svg ~ *,
-  #btn-ocr svg ~ * { display: none !important; }
 
   /* Bouton primary page : garder texte court */
   .page-header .btn-primary {
