@@ -259,7 +259,9 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Fournisseur</label>
-          <input type="text" id="art-supplier" class="form-control" placeholder="ex: Metro, Transgourmet…">
+          <select id="art-supplier" class="form-control">
+            <option value="">— Sélectionner un fournisseur —</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">Code article fournisseur</label>
@@ -412,6 +414,30 @@ import { renderEstSelector } from './js/est-header.js';
 import { toast, normalize, fuzzyMatch, categoryBadge, formatCurrency, openModal, closeModal, setupModalClose, debounce } from './js/utils.js';
 
 // ── Helper : estId courant (strict — lève une erreur si non initialisé) ──
+// ── Peupler le select fournisseur ───────────────────────────
+function populateSupplierSelect(selectedValue = '') {
+  const sel = document.getElementById('art-supplier');
+  if (!sel) return;
+  const current = selectedValue || sel.value;
+  sel.innerHTML = '<option value="">— Sélectionner un fournisseur —</option>';
+  allSuppliers.sort((a,b) => (a.name||'').localeCompare(b.name||'', 'fr'))
+    .forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.name;
+      opt.textContent = s.name;
+      if (s.name === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  // Si valeur existante non trouvée dans la liste, l'ajouter quand même
+  if (current && !allSuppliers.find(s => s.name === current)) {
+    const opt = document.createElement('option');
+    opt.value = current;
+    opt.textContent = current + ' (non listé)';
+    opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
 function getEstId() {
   const id = window.__estId;
   if (!id) throw new Error('Établissement non initialisé — veuillez recharger la page.');
@@ -423,6 +449,7 @@ window.openModal  = openModal;
 
 let currentUser = null;
 let allArticles  = [];
+let allSuppliers = [];
 let currentFilter= 'ALL';
 let sortCol      = 'name';
 let sortDir      = 1;
@@ -452,6 +479,13 @@ document.getElementById('logout-btn').addEventListener('click', async () => { aw
 // ── Load Articles (realtime) ─────────────────────────────────
 function loadArticles() {
   const estId = window.__estId || 'panoramique';
+  // Charger les fournisseurs pour le select du formulaire article
+  getDocs(query(collection(db, 'suppliers'), where('estId','==',estId), orderBy('name')))
+    .then(snap => {
+      allSuppliers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      populateSupplierSelect();
+    }).catch(() => {});
+
   const q = query(collection(db, 'articles'), where('estId','==',estId), orderBy('name'));
   onSnapshot(q, snap => {
     allArticles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -642,7 +676,7 @@ function openArticleModal(article = null) {
   document.getElementById('art-us').value        = article?.us || '';
   document.getElementById('art-ratio').value     = article?.ratio || '';
   document.getElementById('art-price-uc').value  = article?.priceUC || '';
-  document.getElementById('art-supplier').value  = article?.supplier || '';
+  populateSupplierSelect(article?.supplier || '');
   document.getElementById('art-supplier-code').value = article?.supplierCode || '';
   document.getElementById('art-barcode').value   = article?.barcode || '';
   updatePriceUS();
