@@ -281,8 +281,8 @@ async function loadKPIs(now) {
   ]);
   renderKPIMonth('kpi-month-body', resM, scM, resM1);
   renderFCTable('kpi-fc-month', fcM, fcM1, {
-    foodPct: parseFloat(fcM?.food_budgetpct) || null,
-    bevPct:  parseFloat(fcM?.bev_budgetpct)  || null,
+    foodPct: parseFloat(fcM?.food_budgetpct) || 32,
+    bevPct:  parseFloat(fcM?.bev_budgetpct)  || 22,
   });
 
   // ── YTD ────────────────────────────────────────────────
@@ -334,8 +334,8 @@ async function loadKPIs(now) {
   const ytdFoodPcts = ytdFc._foodPcts || [];
   const ytdBevPcts  = ytdFc._bevPcts  || [];
   renderFCTable('kpi-fc-ytd', ytdFc, ytdFcY1, {
-    foodPct: ytdFoodPcts.length ? ytdFoodPcts.reduce((a,b)=>a+b,0)/ytdFoodPcts.length : null,
-    bevPct:  ytdBevPcts.length  ? ytdBevPcts.reduce((a,b)=>a+b,0)/ytdBevPcts.length   : null,
+    foodPct: ytdFoodPcts.length ? ytdFoodPcts.reduce((a,b)=>a+b,0)/ytdFoodPcts.length : 32,
+    bevPct:  ytdBevPcts.length  ? ytdBevPcts.reduce((a,b)=>a+b,0)/ytdBevPcts.length   : 22,
   });
 
   // ── Graphiques ──────────────────────────────────────────
