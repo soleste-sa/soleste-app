@@ -480,7 +480,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => { aw
 function loadArticles() {
   const estId = window.__estId || 'panoramique';
   // Charger les fournisseurs pour le select du formulaire article
-  getDocs(query(collection(db, 'suppliers'), where('estId','==',estId), orderBy('name')))
+  getDocs(query(collection(db, 'suppliers'), where('estId','==',estId)))
     .then(snap => {
       allSuppliers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       populateSupplierSelect();
