@@ -384,7 +384,7 @@ function renderKPIMonth(bodyId, res, sc, resY1) {
     ${row('Staff cost %',cRT.staffCostPct,cR.staffCostPct,corrSCR,cRY.staffCostPct,'pct',sc_col)}
     ${row('ARR',cRT.arr,cR.arr,null,cRY.arr,'eur2')}
     ${row('RevPAR',cRT.revpar,cR.revpar,null,cRY.revpar,'eur2')}
-    ${row("Taux d'occ.",rT.occupancy??cRT.occupancy,cR.occupancy,null,rY.occupancy??cRY.occupancy,'pct')}
+    ${(()=>{ const occT=rT.occupancy??cRT.occupancy; const occA=cR.occupancy; const occ_col=v=>(occT!=null&&!isNaN(occT)&&occT>0&&v!=null&&!isNaN(v))?(v>=occT?'var(--success)':'var(--danger)'):'inherit'; return row("Taux d'occ.",occT,occA,null,rY.occupancy??cRY.occupancy,'pct',occ_col); })()}
     <tr><td colspan="5" class="sec-row">🍽 F&B</td></tr>
     ${row('Incomes',fT.incomes,f.incomes,null,fY.incomes,'eur')}
     ${row('Staff cost %',cFT.staffCostPct,cF.staffCostPct,corrSCF,cFY.staffCostPct,'pct',sc_col)}
