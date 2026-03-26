@@ -23,6 +23,12 @@
     .results-table th { background: var(--forest-dk); color: var(--cream); font-weight: 600; text-align: center; }
     .results-table .col-label { text-align: left; background: var(--cream); font-weight: 500; min-width: 160px; position: sticky; left: 0; z-index: 2; border-right: 2px solid var(--border-dk); }
     .results-table .section-header td { background: var(--forest); color: white; font-weight: 700; font-size: .8rem; letter-spacing: .06em; text-align: left; padding: 8px 10px; }
+    .results-table .section-header .section-label { min-width: 180px; font-size: .85rem; letter-spacing: .08em; }
+    .results-table .section-header .section-col { text-align: center; font-size: .7rem; font-weight: 600; letter-spacing: .04em; opacity: .75; padding: 8px 4px; white-space: nowrap; }
+    .results-table .section-header .section-col-T { opacity: .65; }
+    .results-table .section-header .section-col-A { opacity: .9; }
+    .results-table .section-header .section-col-C { opacity: .75; font-style: italic; }
+    .results-table .section-header .section-col-Y1 { opacity: .6; }
     .results-table .auto-row td { background: rgba(16,86,91,.05); font-style: italic; }
     .results-table .auto-row .col-label { font-style: normal; font-weight: 600; color: var(--forest); }
     .results-table input[type=number] {
@@ -225,7 +231,11 @@ function buildRows(year) {
 
 function renderRow(row, year) {
   if (row.type === 'section') {
-    return `<tr class="section-header"><td colspan="${1 + 12*4}">${row.label}</td></tr>`;
+    let cells = `<td class="section-label">${row.label}</td>`;
+    for (let m = 0; m < 12; m++) {
+      cells += `<td class="section-col section-col-T month-group">Bgt</td><td class="section-col section-col-A">Act</td><td class="section-col section-col-C">Cor</td><td class="section-col section-col-Y1">Y-1</td>`;
+    }
+    return `<tr class="section-header">${cells}</tr>`;
   }
 
   let cells = `<td class="col-label">${row.label}</td>`;
