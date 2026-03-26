@@ -419,20 +419,28 @@ function populateSupplierSelect(selectedValue = '') {
   const sel = document.getElementById('art-supplier');
   if (!sel) return;
   const current = selectedValue || sel.value;
+
+  // Fusionner : fournisseurs Firestore + noms uniques issus des articles
+  const namesFromArticles = [...new Set(
+    allArticles.map(a => a.supplier || a.fournisseur || '').filter(Boolean)
+  )];
+  const namesFromSuppliers = allSuppliers.map(s => s.name);
+  const allNames = [...new Set([...namesFromSuppliers, ...namesFromArticles])]
+    .sort((a,b) => a.localeCompare(b, 'fr'));
+
   sel.innerHTML = '<option value="">— Sélectionner un fournisseur —</option>';
-  allSuppliers.sort((a,b) => (a.name||'').localeCompare(b.name||'', 'fr'))
-    .forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.name;
-      opt.textContent = s.name;
-      if (s.name === current) opt.selected = true;
-      sel.appendChild(opt);
-    });
-  // Si valeur existante non trouvée dans la liste, l'ajouter quand même
-  if (current && !allSuppliers.find(s => s.name === current)) {
+  allNames.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    if (name === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // Valeur actuelle absente de toutes les listes → l'ajouter
+  if (current && !allNames.includes(current)) {
     const opt = document.createElement('option');
     opt.value = current;
-    opt.textContent = current + ' (non listé)';
+    opt.textContent = current;
     opt.selected = true;
     sel.appendChild(opt);
   }
@@ -494,7 +502,7 @@ function loadArticles() {
     console.error('[loadArticles]', err.message);
     // Index manquant — charger sans filtre en fallback temporaire
     if (err.code === 'failed-precondition') {
-      getDocs(query(collection(db, 'articles'), orderBy('name'))).then(snap => {
+      getDocs(query(collection(db, 'articles'), where('estId','==',estId))).then(snap => {
         allArticles = snap.docs
           .filter(d => !d.data().estId || d.data().estId === estId)
           .map(d => ({ id: d.id, ...d.data() }));
