@@ -327,7 +327,7 @@ import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/
 import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establishment.js';
 import { initMobileNav } from './js/mobile.js';
 import { renderEstSelector } from './js/est-header.js';
-import { toast, fuzzyMatch, formatCurrency, openModal, closeModal } from './js/utils.js';
+import { toast, fuzzyMatch, formatCurrency } from './js/utils.js';
 import {
   getPlaces, listenPlaces, createInventory, getAllInventories,
   closeInventory, reopenInventory, deleteInventoryFull,
@@ -867,7 +867,7 @@ document.getElementById('btn-new-inv').addEventListener('click', () => {
     document.getElementById('new-inv-warning').style.display = 'none';
   }
 
-  openModal('new-inv-modal');
+  document.getElementById('new-inv-modal').classList.remove('hidden');
 });
 
 document.getElementById('btn-cancel-new-inv').addEventListener('click', () => closeModal('new-inv-modal'));
@@ -883,7 +883,7 @@ document.getElementById('btn-create-inv').addEventListener('click', async () => 
   const existing = allInventories.find(i => i.mois === mois && i.place === place);
   if (existing) {
     if (!confirm(`Un inventaire existe déjà pour ${place} en ${mois}. Ouvrir l'existant ?`)) return;
-    closeModal('new-inv-modal');
+    document.getElementById('new-inv-modal').classList.add('hidden');
     openInventory(existing.id);
     return;
   }
@@ -892,7 +892,7 @@ document.getElementById('btn-create-inv').addEventListener('click', async () => 
     document.getElementById('btn-create-inv').disabled = true;
     const ref = await createInventory({ mois, place, createdBy: currentUser.email });
     allInventories.unshift({ id: ref.id, mois, place, status:'open', createdBy: currentUser.email });
-    closeModal('new-inv-modal');
+    document.getElementById('new-inv-modal').classList.add('hidden');
     toast('Inventaire créé', 'success');
     openInventory(ref.id);
   } catch(e) {
