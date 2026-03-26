@@ -269,7 +269,7 @@
 </div>
 
 <!-- Modal nouvel inventaire -->
-<div id="new-inv-modal" class="modal-backdrop hidden">
+<div id="new-inv-modal" class="modal-backdrop">
   <div class="modal" style="max-width:440px;">
     <div class="modal-header">
       <span class="modal-title">Nouvel inventaire</span>
@@ -867,7 +867,7 @@ document.getElementById('btn-new-inv').addEventListener('click', () => {
     document.getElementById('new-inv-warning').style.display = 'none';
   }
 
-  document.getElementById('new-inv-modal').classList.remove('hidden');
+  document.getElementById('new-inv-modal').classList.add('open');
 });
 
 document.getElementById('btn-cancel-new-inv').addEventListener('click', () => closeModal('new-inv-modal'));
@@ -883,7 +883,7 @@ document.getElementById('btn-create-inv').addEventListener('click', async () => 
   const existing = allInventories.find(i => i.mois === mois && i.place === place);
   if (existing) {
     if (!confirm(`Un inventaire existe déjà pour ${place} en ${mois}. Ouvrir l'existant ?`)) return;
-    document.getElementById('new-inv-modal').classList.add('hidden');
+    document.getElementById('new-inv-modal').classList.remove('open');
     openInventory(existing.id);
     return;
   }
@@ -892,7 +892,7 @@ document.getElementById('btn-create-inv').addEventListener('click', async () => 
     document.getElementById('btn-create-inv').disabled = true;
     const ref = await createInventory({ mois, place, createdBy: currentUser.email });
     allInventories.unshift({ id: ref.id, mois, place, status:'open', createdBy: currentUser.email });
-    document.getElementById('new-inv-modal').classList.add('hidden');
+    document.getElementById('new-inv-modal').classList.remove('open');
     toast('Inventaire créé', 'success');
     openInventory(ref.id);
   } catch(e) {
