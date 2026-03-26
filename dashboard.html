@@ -280,7 +280,10 @@ async function loadKPIs(now) {
     getMonthDoc('foodcost',  prevY-1, prevM),
   ]);
   renderKPIMonth('kpi-month-body', resM, scM, resM1);
-  renderFCTable('kpi-fc-month', fcM, fcM1);
+  renderFCTable('kpi-fc-month', fcM, fcM1, {
+    foodPct: parseFloat(fcM?.food_budgetpct) || null,
+    bevPct:  parseFloat(fcM?.bev_budgetpct)  || null,
+  });
 
   // ── YTD ────────────────────────────────────────────────
   const ytdMonths = ytdEnd > 0 ? Array.from({length: ytdEnd}, (_,i) => i) : [prevM];
@@ -316,6 +319,9 @@ async function loadKPIs(now) {
       aggFC(ytdFc[sec],   f[sec]  || {});
       aggFC(ytdFcY1[sec], f1[sec] || {});
     }
+    // Collecter les % budget cible pour moyenne YTD
+    const fp = parseFloat(f?.food_budgetpct); if (!isNaN(fp) && fp > 0) { ytdFc._foodPcts = ytdFc._foodPcts || []; ytdFc._foodPcts.push(fp); }
+    const bp = parseFloat(f?.bev_budgetpct);  if (!isNaN(bp) && bp > 0) { ytdFc._bevPcts  = ytdFc._bevPcts  || []; ytdFc._bevPcts.push(bp); }
   }
   // Injecter la moyenne du taux d'occupation budget dans ytdRes
   if (occBudgetVals.length > 0) {
@@ -325,7 +331,12 @@ async function loadKPIs(now) {
     ytdResY1.room_target.occupancy = occBudgetY1Vals.reduce((a,b) => a+b, 0) / occBudgetY1Vals.length;
   }
   renderKPIMonth('kpi-ytd-body', ytdRes, ytdSc, ytdResY1);
-  renderFCTable('kpi-fc-ytd', ytdFc, ytdFcY1);
+  const ytdFoodPcts = ytdFc._foodPcts || [];
+  const ytdBevPcts  = ytdFc._bevPcts  || [];
+  renderFCTable('kpi-fc-ytd', ytdFc, ytdFcY1, {
+    foodPct: ytdFoodPcts.length ? ytdFoodPcts.reduce((a,b)=>a+b,0)/ytdFoodPcts.length : null,
+    bevPct:  ytdBevPcts.length  ? ytdBevPcts.reduce((a,b)=>a+b,0)/ytdBevPcts.length   : null,
+  });
 
   // ── Graphiques ──────────────────────────────────────────
   await buildCharts(year);
@@ -386,20 +397,63 @@ function renderKPIMonth(bodyId, res, sc, resY1) {
     ${row('GOP',gT.gop,g.gop,null,gY.gop,'eur')}`;
 }
 
-function renderFCTable(bodyId, fc, fcY1) {
-  const cF=calcFoodCost(fc?.food||{}), cFT=calcFoodCost(fc?.food_target||{}), cFY=calcFoodCost(fcY1?.food||{});
-  const cB=calcFoodCost(fc?.bev||{}),  cBT=calcFoodCost(fc?.bev_target||{}),  cBY=calcFoodCost(fcY1?.bev||{});
-  const fcCol=(v,bev)=>v===null?'inherit':bev?(v<20?'var(--success)':v<=24?'var(--warning)':'var(--danger)'):(v<30?'var(--success)':v<=33?'var(--warning)':'var(--danger)');
-  const E=(v,fmt='eur')=>{ if(v===null||v===undefined||isNaN(v))return '<span style="color:var(--muted)">—</span>'; return fmt==='pct'?fmtPct(v):fmtEur(v,0); };
+function renderFCTable(bodyId, fc, fcY1, budgetPcts = {}) {
+  const cF  = calcFoodCost(fc?.food||{});
+  const cB  = calcFoodCost(fc?.bev||{});
+  const cFY = calcFoodCost(fcY1?.food||{});
+  const cBY = calcFoodCost(fcY1?.bev||{});
+
+  // % budget cible depuis foodcost (budgetPcts) — priorité sur food_target
+  const foodTargetPct = budgetPcts.foodPct ?? null;
+  const bevTargetPct  = budgetPcts.bevPct  ?? null;
+
+  const fcCol = (v, bev) => v === null ? 'inherit' :
+    bev  ? (v < 20 ? 'var(--success)' : v <= 24 ? 'var(--warning)' : 'var(--danger)') :
+           (v < 30 ? 'var(--success)' : v <= 33 ? 'var(--warning)' : 'var(--danger)');
+
+  const E = (v, fmt='eur') => {
+    if (v === null || v === undefined || isNaN(v)) return '<span style="color:var(--muted)">—</span>';
+    return fmt === 'pct' ? fmtPct(v) : fmtEur(v, 0);
+  };
+
+  const Epct = (v, bev) => {
+    if (v === null || v === undefined || isNaN(v)) return '<span style="color:var(--muted)">—</span>';
+    return `<span style="color:${fcCol(v,bev)};font-weight:600;">${fmtPct(v)}</span>`;
+  };
+
   document.getElementById(bodyId).innerHTML = `
     <tr><td colspan="4" class="sec-row">🥗 FOOD</td></tr>
-    <tr><td class="lbl">Coût matières</td><td>${E(cFT.cost)}</td><td style="font-weight:600">${E(cF.cost)}</td><td style="color:var(--muted);font-size:.72rem">${E(cFY.cost)}</td></tr>
-    <tr><td class="lbl">Ventes</td><td>${E(fc?.food_target?.sales)}</td><td style="font-weight:600">${E(fc?.food?.sales)}</td><td style="color:var(--muted);font-size:.72rem">${E(fcY1?.food?.sales)}</td></tr>
-    <tr><td class="lbl">Food cost %</td><td style="color:${fcCol(cFT.costPct,false)}">${E(cFT.costPct,'pct')}</td><td style="font-weight:700;color:${fcCol(cF.costPct,false)}">${E(cF.costPct,'pct')}</td><td style="font-size:.72rem;color:${fcCol(cFY.costPct,false)}">${E(cFY.costPct,'pct')}</td></tr>
+    <tr><td class="lbl">Coût matières</td>
+      <td>—</td>
+      <td style="font-weight:600">${E(cF.cost)}</td>
+      <td style="color:var(--muted);font-size:.72rem">${E(cFY.cost)}</td>
+    </tr>
+    <tr><td class="lbl">Ventes</td>
+      <td>—</td>
+      <td style="font-weight:600">${E(fc?.food?.sales)}</td>
+      <td style="color:var(--muted);font-size:.72rem">${E(fcY1?.food?.sales)}</td>
+    </tr>
+    <tr><td class="lbl">Food cost %</td>
+      <td>${Epct(foodTargetPct, false)}</td>
+      <td style="font-weight:700;color:${fcCol(cF.costPct,false)}">${E(cF.costPct,'pct')}</td>
+      <td style="font-size:.72rem;color:${fcCol(cFY.costPct,false)}">${E(cFY.costPct,'pct')}</td>
+    </tr>
     <tr><td colspan="4" class="sec-row">🥂 BEVERAGE</td></tr>
-    <tr><td class="lbl">Coût matières</td><td>${E(cBT.cost)}</td><td style="font-weight:600">${E(cB.cost)}</td><td style="color:var(--muted);font-size:.72rem">${E(cBY.cost)}</td></tr>
-    <tr><td class="lbl">Ventes</td><td>${E(fc?.bev_target?.sales)}</td><td style="font-weight:600">${E(fc?.bev?.sales)}</td><td style="color:var(--muted);font-size:.72rem">${E(fcY1?.bev?.sales)}</td></tr>
-    <tr><td class="lbl">Bev cost %</td><td style="color:${fcCol(cBT.costPct,true)}">${E(cBT.costPct,'pct')}</td><td style="font-weight:700;color:${fcCol(cB.costPct,true)}">${E(cB.costPct,'pct')}</td><td style="font-size:.72rem;color:${fcCol(cBY.costPct,true)}">${E(cBY.costPct,'pct')}</td></tr>`;
+    <tr><td class="lbl">Coût matières</td>
+      <td>—</td>
+      <td style="font-weight:600">${E(cB.cost)}</td>
+      <td style="color:var(--muted);font-size:.72rem">${E(cBY.cost)}</td>
+    </tr>
+    <tr><td class="lbl">Ventes</td>
+      <td>—</td>
+      <td style="font-weight:600">${E(fc?.bev?.sales)}</td>
+      <td style="color:var(--muted);font-size:.72rem">${E(fcY1?.bev?.sales)}</td>
+    </tr>
+    <tr><td class="lbl">Bev cost %</td>
+      <td>${Epct(bevTargetPct, true)}</td>
+      <td style="font-weight:700;color:${fcCol(cB.costPct,true)}">${E(cB.costPct,'pct')}</td>
+      <td style="font-size:.72rem;color:${fcCol(cBY.costPct,true)}">${E(cBY.costPct,'pct')}</td>
+    </tr>`;
 }
 
 async function buildCharts(year) {
