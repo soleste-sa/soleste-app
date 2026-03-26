@@ -29,6 +29,11 @@
     .results-table .section-header .section-col-A { opacity: .9; }
     .results-table .section-header .section-col-C { opacity: .75; font-style: italic; }
     .results-table .section-header .section-col-Y1 { opacity: .6; }
+    /* Taux d'occupation Budget — input avec suffixe % */
+    .occ-budget-cell { padding: 2px 4px !important; }
+    .occ-input-wrap { display: flex; align-items: center; gap: 2px; }
+    .occ-input-wrap input { flex: 1; min-width: 0; }
+    .occ-pct-suffix { font-size: .8rem; font-weight: 600; color: var(--forest); opacity: .8; white-space: nowrap; }
     .results-table .auto-row td { background: rgba(16,86,91,.05); font-style: italic; }
     .results-table .auto-row .col-label { font-style: normal; font-weight: 600; color: var(--forest); }
     .results-table input[type=number] {
@@ -265,11 +270,24 @@ function renderRow(row, year) {
       // Budget = saisie manuelle (ex: taux d'occupation cible)
       // Actual / Corrigé / Y-1 = calculé automatiquement
       const tVal = dT[row.field] ?? '';
-      cells += `<td class="col-T month-group"><input type="number" step="0.1" min="0" max="100" value="${tVal}" data-year="${year}" data-month="${m}" data-section="${row.section}_target" data-field="${row.field}" onchange="handleInput(this)" style="font-style:normal;"></td>`;
+      // Budget : input + suffixe % dans une cellule wrapper
+      cells += `<td class="col-T month-group occ-budget-cell">
+        <div class="occ-input-wrap">
+          <input type="number" step="0.1" min="0" max="100" value="${tVal}" data-year="${year}" data-month="${m}" data-section="${row.section}_target" data-field="${row.field}" onchange="handleInput(this)">
+          <span class="occ-pct-suffix">%</span>
+        </div>
+      </td>`;
       const calcA  = getAutoValue(d, row.section, row.field);
       const corrSc = getCorrectedCalcValue(sc, row.section, row.field, d);
       const calcY1 = getAutoValue(dY1, row.section, row.field);
-      cells += `<td class="col-A auto-row"><span class="computed-val">${fmt(calcA, row.fmt)}</span></td>`;
+      // Actual : vert si >= Budget, rouge si < Budget
+      const budgetNum = parseFloat(tVal);
+      const actualNum = (calcA !== null && calcA !== undefined) ? parseFloat(calcA) : null;
+      let occColor = 'inherit';
+      if (actualNum !== null && !isNaN(actualNum) && !isNaN(budgetNum) && budgetNum > 0) {
+        occColor = actualNum >= budgetNum ? 'var(--success)' : 'var(--danger)';
+      }
+      cells += `<td class="col-A auto-row"><span class="computed-val" style="color:${occColor};font-weight:${occColor!=='inherit'?'600':'400'}">${fmt(calcA, row.fmt)}</span></td>`;
       cells += `<td class="col-C auto-row"><span class="computed-val">${corrSc !== null ? fmt(corrSc, row.fmt) : '—'}</span></td>`;
       cells += `<td class="col-Y1 auto-row">${fmt(calcY1, row.fmt)}</td>`;
     } else {
