@@ -394,7 +394,7 @@ function renderKPIMonth(bodyId, res, sc, resY1) {
     ${row('Incomes',fT.incomes,f.incomes,null,fY.incomes,'eur')}
     ${row('Staff cost %',cFT.staffCostPct,cF.staffCostPct,corrSCF,cFY.staffCostPct,'pct',sc_col)}
     <tr><td colspan="5" class="sec-row">📊 GOP</td></tr>
-    ${row('GOP',gT.gop,g.gop,null,gY.gop,'eur')}`;
+    ${(()=>{ const gopT=gT.gop; const gop_col=v=>(gopT!=null&&!isNaN(gopT)&&v!=null&&!isNaN(v))?(v>=gopT?'var(--success)':'var(--danger)'):'inherit'; return row('GOP',gopT,g.gop,null,gY.gop,'eur',gop_col); })()}`;
 }
 
 function renderFCTable(bodyId, fc, fcY1, budgetPcts = {}) {
