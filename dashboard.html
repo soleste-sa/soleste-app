@@ -296,6 +296,10 @@ async function loadKPIs(now) {
   let ytdFc  = {food:{},bev:{},food_target:{},bev_target:{}};
   let ytdFcY1= {food:{},bev:{},food_target:{},bev_target:{}};
 
+  // Accumulation séparée des taux d'occupation budget (moyenne, pas somme)
+  const occBudgetVals = [];
+  const occBudgetY1Vals = [];
+
   for (const m of ytdMonths) {
     const [r,s,r1,f,f1] = await Promise.all([
       getMonthDoc('results',   year,   m),
@@ -308,11 +312,23 @@ async function loadKPIs(now) {
       agg(ytdRes[sec],   r[sec]  || {});
       agg(ytdResY1[sec], r1[sec] || {});
     }
+    // Taux d'occupation budget = saisie manuelle → collecter pour moyenne
+    const occT  = parseFloat(r?.room_target?.occupancy);
+    const occY1 = parseFloat(r1?.room_target?.occupancy);
+    if (!isNaN(occT)  && occT  > 0) occBudgetVals.push(occT);
+    if (!isNaN(occY1) && occY1 > 0) occBudgetY1Vals.push(occY1);
     aggSC(ytdSc,  s);
     for (const sec of ['food','bev','food_target','bev_target']) {
       aggFC(ytdFc[sec],   f[sec]  || {});
       aggFC(ytdFcY1[sec], f1[sec] || {});
     }
+  }
+  // Injecter la moyenne du taux d'occupation budget dans ytdRes
+  if (occBudgetVals.length > 0) {
+    ytdRes.room_target.occupancy = occBudgetVals.reduce((a,b) => a+b, 0) / occBudgetVals.length;
+  }
+  if (occBudgetY1Vals.length > 0) {
+    ytdResY1.room_target.occupancy = occBudgetY1Vals.reduce((a,b) => a+b, 0) / occBudgetY1Vals.length;
   }
   renderKPIMonth('kpi-ytd-body', ytdRes, ytdSc, ytdResY1);
   renderFCTable('kpi-fc-ytd', ytdFc, ytdFcY1);
@@ -368,7 +384,7 @@ function renderKPIMonth(bodyId, res, sc, resY1) {
     ${row('Staff cost %',cRT.staffCostPct,cR.staffCostPct,corrSCR,cRY.staffCostPct,'pct',sc_col)}
     ${row('ARR',cRT.arr,cR.arr,null,cRY.arr,'eur2')}
     ${row('RevPAR',cRT.revpar,cR.revpar,null,cRY.revpar,'eur2')}
-    ${row("Taux d'occ.",cRT.occupancy,cR.occupancy,null,cRY.occupancy,'pct')}
+    ${row("Taux d'occ.",rT.occupancy??cRT.occupancy,cR.occupancy,null,rY.occupancy??cRY.occupancy,'pct')}
     <tr><td colspan="5" class="sec-row">🍽 F&B</td></tr>
     ${row('Incomes',fT.incomes,f.incomes,null,fY.incomes,'eur')}
     ${row('Staff cost %',cFT.staffCostPct,cF.staffCostPct,corrSCF,cFY.staffCostPct,'pct',sc_col)}
