@@ -34,29 +34,11 @@ export async function deleteArticle(id) {
   await deleteDoc(doc(db, COL, id));
 }
 
-// ── Récupérer tous les articles (snapshot unique, dual-schema) ─
+// ── Récupérer tous les articles (snapshot unique) ───────────
 export async function getAllArticles() {
-  const estId = (typeof window !== 'undefined' && window.__estId) || 'panoramique';
-  // Essayer d'abord avec le champ 'name' (nouveau schéma)
-  try {
-    const q = query(collection(db, COL), where('estId','==',estId), orderBy('name'));
-    const snap = await getDocs(q);
-    if (snap.docs.length > 0) {
-      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
-  } catch(_) {}
-  // Fallback : champ 'nom' (ancien schéma) ou sans orderBy
-  try {
-    const q = query(collection(db, COL), where('estId','==',estId), orderBy('nom'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch(_) {}
-  // Dernier fallback : pas de tri, tri client
-  const q = query(collection(db, COL), where('estId','==',estId));
+  const q = query(collection(db, COL), orderBy('nom'));
   const snap = await getDocs(q);
-  return snap.docs
-    .map(d => ({ id: d.id, ...d.data() }))
-    .sort((a,b) => (a.name||a.nom||'').localeCompare(b.name||b.nom||'', 'fr'));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 // ── Récupérer un article par ID ─────────────────────────────
@@ -66,23 +48,13 @@ export async function getArticle(id) {
   return { id: snap.id, ...snap.data() };
 }
 
-// ── Écoute temps réel (dual-schema) ─────────────────────────
+// ── Écoute temps réel ───────────────────────────────────────
 export function listenArticles(callback) {
-  const estId = (typeof window !== 'undefined' && window.__estId) || 'panoramique';
-  // Essayer name d'abord, fallback nom
-  const tryListen = (field) => {
-    const q = query(collection(db, COL), where('estId','==',estId), orderBy(field));
-    return onSnapshot(q,
-      snap => {
-        const articles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        callback(articles);
-      },
-      () => {
-        if (field === 'name') tryListen('nom');
-      }
-    );
-  };
-  return tryListen('name');
+  const q = query(collection(db, COL), orderBy('nom'));
+  return onSnapshot(q, snap => {
+    const articles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    callback(articles);
+  });
 }
 
 // ── Import batch depuis Excel/CSV ───────────────────────────

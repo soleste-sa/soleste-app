@@ -532,8 +532,7 @@ async function loadInventory(inv) {
     invLines = lines;
     renderLines();
     updateTotal();
-    injectMobBottomBar();
-    updateMobBottomBar();
+    mobUpdateBar();
   });
 }
 
@@ -571,6 +570,7 @@ function renderLines(filter = '') {
       <div class="empty-state-icon">📦</div>
       <p>${filter ? 'Aucun résultat pour "' + filter + '"' : 'Aucun article ajouté. Scannez ou recherchez.'}</p>
     </div>`;
+    document.getElementById('lines-count').textContent = '0 ligne';
     return;
   }
 
@@ -586,150 +586,120 @@ function renderLines(filter = '') {
   const isConfirmed = currentInvData?.status === 'confirmed';
 
   if (isMobile) {
-    // ── Rendu mobile : cards avec +/- ──────────────────────
+    // ── Rendu mobile : accordéon par emplacement + boutons +/- ──
     let html = '';
     for (const [place, lines] of Object.entries(groups)) {
-      const collapseKey = 'inv_collapse_' + place;
-      const isCollapsed = sessionStorage.getItem(collapseKey) === '1';
+      const ck = 'inv_col_' + place;
+      const collapsed = sessionStorage.getItem(ck) === '1';
       html += `<div class="inv-place-group">
-        <div class="inv-place-header ${isCollapsed ? 'collapsed' : ''}"
-             onclick="togglePlaceGroup(this, '${collapseKey}')">
+        <div class="inv-place-header${collapsed?' collapsed':''}" onclick="togglePlace(this,'${ck}')">
           <h3>📍 ${place}</h3>
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="place-count">${lines.length} art.</span>
-            <svg class="place-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
+            <svg class="place-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>
-        <div class="inv-place-body ${isCollapsed ? 'collapsed' : ''}">`;
+        <div class="inv-place-body${collapsed?' collapsed':''}">`;
       lines.forEach(l => {
         const hasQty = parseFloat(l.quantite) > 0;
-        html += `<div class="inv-article-row ${hasQty ? 'has-qty' : ''}" id="mob-row-${l.id}">
+        html += `<div class="inv-article-row${hasQty?' has-qty':''}" id="mob-row-${l.id}">
           <div class="inv-art-info">
             <div class="inv-art-name">${l.articleNom}</div>
-            <div class="inv-art-sub">${l.articleUs || ''}${l.prixUs ? ' · ' + formatCurrency(l.prixUs) : ''}</div>
+            <div class="inv-art-sub">${l.articleUs||''}${l.prixUs?(' · '+formatCurrency(l.prixUs)):''}</div>
           </div>
           ${isConfirmed
             ? `<span class="fw-600">${l.quantite} ${l.articleUs}</span>`
             : `<div class="inv-qty-ctrl">
-                <button class="inv-qty-btn minus" onclick="mobQtyStep('${l.id}', -1)" aria-label="Moins">−</button>
+                <button class="inv-qty-btn minus" onclick="mobStep('${l.id}',-1)">−</button>
                 <input type="number" class="inv-qty-input" inputmode="decimal"
                   value="${l.quantite}" min="0" step="0.1"
-                  data-lineid="${l.id}"
-                  onchange="updateLineQty(this)"
-                  onfocus="this.select()">
-                <button class="inv-qty-btn plus" onclick="mobQtyStep('${l.id}', 1)" aria-label="Plus">+</button>
-              </div>`
-          }
+                  data-lineid="${l.id}" onchange="updateLineQty(this)" onfocus="this.select()">
+                <button class="inv-qty-btn plus"  onclick="mobStep('${l.id}',1)">+</button>
+              </div>`}
         </div>`;
       });
       html += `</div></div>`;
     }
     container.innerHTML = html;
-    updateMobBottomBar();
+    mobUpdateBar();
   } else {
-    // ── Rendu desktop : tableau classique ──────────────────
+    // ── Rendu desktop : tableau classique ──
     let html = `<div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Article</th>
-            <th>Catégorie</th>
-            <th>Lieu</th>
-            <th style="text-align:right;">Quantité</th>
-            <th style="text-align:right;">Prix US</th>
-            <th style="text-align:right;">Valeur</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>`;
+      <table><thead><tr>
+        <th>Article</th><th>Catégorie</th><th>Lieu</th>
+        <th style="text-align:right;">Quantité</th>
+        <th style="text-align:right;">Prix US</th>
+        <th style="text-align:right;">Valeur</th><th></th>
+      </tr></thead><tbody>`;
     filtered.forEach(l => {
-      const valeur = (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUs) || 0);
+      const valeur = (parseFloat(l.quantite)||0) * (parseFloat(l.prixUs)||0);
       html += `<tr>
         <td class="fw-500">${l.articleNom}</td>
         <td>${categoryBadge(l.categorie)}</td>
-        <td><span class="text-muted text-sm">${l.place || '—'}</span></td>
+        <td><span class="text-muted text-sm">${l.place||'—'}</span></td>
         <td style="text-align:right;">
           ${isConfirmed
             ? `<span class="fw-600">${l.quantite} ${l.articleUs}</span>`
-            : `<input type="number" class="qty-input" value="${l.quantite}" min="0" step="0.1"
-                data-lineid="${l.id}" onchange="updateLineQty(this)">`
-          }
+            : `<input type="number" class="qty-input" value="${l.quantite}" min="0" step="0.1" data-lineid="${l.id}" onchange="updateLineQty(this)">`}
         </td>
         <td style="text-align:right;" class="mono text-sm">${formatCurrency(l.prixUs)}</td>
         <td style="text-align:right;" class="fw-600">${formatCurrency(valeur)}</td>
-        <td>
-          ${isConfirmed ? '' : `<button class="btn btn-ghost btn-icon btn-sm" onclick="removeLine('${l.id}')" data-tooltip="Supprimer">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-          </button>`}
-        </td>
+        <td>${isConfirmed?'':`<button class="btn btn-ghost btn-icon btn-sm" onclick="removeLine('${l.id}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>`}</td>
       </tr>`;
     });
     html += `</tbody></table></div>`;
     container.innerHTML = html;
   }
 
-  document.getElementById('lines-count').textContent = `${filtered.length} ligne${filtered.length > 1 ? 's' : ''}`;
+  document.getElementById('lines-count').textContent = `${filtered.length} ligne${filtered.length>1?'s':''}`;
 }
 
-// ── Mobile : toggle groupe emplacement ───────────────────────
-window.togglePlaceGroup = function(header, key) {
-  const body = header.nextElementSibling;
-  const collapsed = header.classList.toggle('collapsed');
-  body.classList.toggle('collapsed', collapsed);
-  sessionStorage.setItem(key, collapsed ? '1' : '0');
+// ── Mobile helpers ────────────────────────────────────────────
+window.togglePlace = function(hdr, key) {
+  const body = hdr.nextElementSibling;
+  const c = hdr.classList.toggle('collapsed');
+  body.classList.toggle('collapsed', c);
+  sessionStorage.setItem(key, c ? '1' : '0');
 };
 
-// ── Mobile : +/- boutons quantité ────────────────────────────
-window.mobQtyStep = async function(lineId, delta) {
+window.mobStep = async function(lineId, delta) {
   const input = document.querySelector(`.inv-qty-input[data-lineid="${lineId}"]`);
   if (!input) return;
-  const current = parseFloat(input.value) || 0;
-  const newVal  = Math.max(0, Math.round((current + delta) * 10) / 10);
-  input.value   = newVal;
-  const row = document.getElementById('mob-row-' + lineId);
+  const newVal = Math.max(0, Math.round((parseFloat(input.value)||0) + delta) * 10) / 10;
+  // correction calcul
+  const corrected = Math.max(0, Math.round(((parseFloat(input.value)||0) + delta) * 10) / 10);
+  input.value = corrected;
   try {
-    await setQuantity(lineId, newVal);
+    await setQuantity(lineId, corrected);
+    const row = document.getElementById('mob-row-' + lineId);
     if (row) {
-      row.classList.toggle('has-qty', newVal > 0);
+      row.classList.toggle('has-qty', corrected > 0);
       row.classList.add('flash-green');
       setTimeout(() => row.classList.remove('flash-green'), 500);
     }
-    updateMobBottomBar();
+    mobUpdateBar();
   } catch(e) { toast('Erreur', 'error'); }
 };
 
-// ── Mobile : barre flottante résumé ──────────────────────────
-function updateMobBottomBar() {
+function mobUpdateBar() {
   if (window.innerWidth > 768) return;
-  let bar = document.getElementById('inv-mob-bottom-bar');
-  if (!bar) return;
-  const total = invLines.filter(l => parseFloat(l.quantite) > 0).length;
-  const val   = calcInventoryValue(invLines);
-  bar.querySelector('.inv-summary strong').textContent = `${total} article${total > 1 ? 's' : ''} saisis`;
-  bar.querySelector('.inv-summary span').textContent   = formatCurrency(val);
-}
-
-// ── Injecter barre flottante sur mobile ───────────────────────
-function injectMobBottomBar() {
-  if (window.innerWidth > 768) return;
-  if (document.getElementById('inv-mob-bottom-bar')) return;
-  const isConfirmed = currentInvData?.status === 'confirmed';
-  const bar = document.createElement('div');
-  bar.className = 'inv-bottom-bar';
-  bar.id = 'inv-mob-bottom-bar';
-  bar.innerHTML = `
-    <div class="inv-summary">
-      <strong>0 article saisi</strong>
-      <span>0,00 €</span>
-    </div>
-    ${isConfirmed ? '' : `<button class="btn-confirm-inv" onclick="document.getElementById('btn-confirm-inv').click()">
-      ✓ Confirmer
-    </button>`}
-  `;
-  document.body.appendChild(bar);
-  updateMobBottomBar();
+  let bar = document.getElementById('inv-mob-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'inv-bottom-bar'; bar.id = 'inv-mob-bar';
+    bar.innerHTML = `<div class="inv-summary"><strong>0 article saisi</strong><span>0,00 €</span></div>
+      <button class="btn-confirm-inv" onclick="document.getElementById('btn-confirm-inv')?.click()">✓ Confirmer</button>`;
+    document.body.appendChild(bar);
+  }
+  const n = invLines.filter(l => parseFloat(l.quantite) > 0).length;
+  const v = calcInventoryValue(invLines);
+  bar.querySelector('strong').textContent = `${n} article${n>1?'s':''} saisi${n>1?'s':''}`;
+  bar.querySelector('span').textContent   = formatCurrency(v);
+  // Masquer le bouton si inventaire confirmé
+  const btn = bar.querySelector('.btn-confirm-inv');
+  if (btn) btn.style.display = currentInvData?.status==='confirmed' ? 'none' : '';
 }
 
 window.updateLineQty = async function(input) {
@@ -737,14 +707,13 @@ window.updateLineQty = async function(input) {
   const qty    = parseFloat(input.value) || 0;
   try {
     await setQuantity(lineId, qty);
-    // Flash vert sur mobile
     const row = document.getElementById('mob-row-' + lineId);
     if (row) {
       row.classList.toggle('has-qty', qty > 0);
       row.classList.add('flash-green');
       setTimeout(() => row.classList.remove('flash-green'), 500);
     }
-    updateMobBottomBar();
+    mobUpdateBar();
   } catch (e) {
     toast('Erreur mise à jour', 'error');
   }
@@ -1017,7 +986,7 @@ function handleBarcodeFound(code) {
   setTimeout(() => { scanCooldown = false; lastScannedCode = null; }, 2000);
 
   // Chercher l'article
-  const art = allArticles.find(a => (a.codeBarres||a.barcode) === code);
+  const art = allArticles.find(a => a.codeBarres === code);
   if (art) {
     openScanFoundModal(art);
     document.getElementById('scan-status').textContent = `✓ Code trouvé : ${art.nom}`;
@@ -1036,8 +1005,8 @@ function handleBarcodeFound(code) {
 function openScanFoundModal(article) {
   selectedArticle = article;
   document.getElementById('scan-found-info').innerHTML = `
-    <div class="fw-600">${article.nom||article.name}</div>
-    <div class="text-muted text-sm mt-8">${article.categorie||article.category} · ${article.us||''} · ${formatCurrency((article.prixUc||article.priceUC||0) / ((article.ratioUsUc||article.ratio) || 1))}/US</div>`;
+    <div class="fw-600">${article.nom}</div>
+    <div class="text-muted text-sm mt-8">${article.categorie} · ${article.us} · ${formatCurrency(article.prixUc / (article.ratioUsUc || 1))}/US</div>`;
   renderPlaceSelect('scan-found-place');
   document.getElementById('scan-found-qty').value = '1';
   openModal('modal-scan-found');
@@ -1050,7 +1019,7 @@ async function handleScanConfirm() {
   try {
     await addQuantity(currentInvId, selectedArticle, qty, place);
     closeModal('modal-scan-found');
-    toast(`+${qty} ${selectedArticle.us||''} · ${selectedArticle.nom||selectedArticle.name}`, 'success');
+    toast(`+${qty} ${selectedArticle.us} · ${selectedArticle.nom}`, 'success');
   } catch (e) {
     toast('Erreur ajout : ' + e.message, 'error');
   }
@@ -1062,10 +1031,10 @@ function performSearch() {
   if (!q) return;
 
   const matches = allArticles.filter(a =>
-    fuzzyMatch(a.nom || a.name, q) ||
-    fuzzyMatch(a.codeBarres || a.barcode, q) ||
-    fuzzyMatch(a.codeArticle || a.supplierCode, q) ||
-    fuzzyMatch(a.fournisseur || a.supplier, q)
+    fuzzyMatch(a.nom, q) ||
+    fuzzyMatch(a.codeBarres, q) ||
+    fuzzyMatch(a.codeArticle, q) ||
+    fuzzyMatch(a.fournisseur, q)
   ).slice(0, 10);
 
   const container = document.getElementById('scan-results');
@@ -1080,8 +1049,8 @@ function performSearch() {
     <div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);font-size:.85rem;transition:.15s;"
          onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''"
          onclick="selectSearchResult('${a.id}')">
-      <span style="color:var(--cream);font-weight:500;">${a.nom||a.name}</span>
-      <span style="color:rgba(245,240,232,.4);margin-left:8px;">${a.us||''}</span>
+      <span style="color:var(--cream);font-weight:500;">${a.nom}</span>
+      <span style="color:rgba(245,240,232,.4);margin-left:8px;">${a.us}</span>
     </div>`).join('');
 }
 
@@ -1090,7 +1059,7 @@ window.selectSearchResult = function(id) {
   if (!art) return;
   selectedArticle = art;
   document.getElementById('scan-results').classList.add('hidden');
-  document.getElementById('scan-selected-article').textContent = `${art.nom||art.name} (${art.us||''})`;
+  document.getElementById('scan-selected-article').textContent = `${art.nom} (${art.us})`;
   document.getElementById('scan-qty').value = '1';
   renderPlaceSelect('scan-place-select');
   document.getElementById('scan-add-row').classList.remove('hidden');
@@ -1106,7 +1075,7 @@ async function handleManualAdd() {
     document.getElementById('scan-add-row').classList.add('hidden');
     document.getElementById('scan-selected-article').textContent = '—';
     selectedArticle = null;
-    toast(`Ajouté : ${qty} × ${selectedArticle?.nom || selectedArticle?.name || 'article'}`, 'success');
+    toast(`Ajouté : ${qty} × ${selectedArticle?.nom || 'article'}`, 'success');
   } catch (e) {
     toast('Erreur ajout', 'error');
   }

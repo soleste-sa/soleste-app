@@ -492,60 +492,46 @@ function renderTable() {
 
   document.getElementById('count-label').textContent = `${filtered.length} article${filtered.length>1?'s':''}`;
 
-  // ── Bifurcation mobile / desktop ─────────────────────────
+  // ── Rendu mobile : cards ──────────────────────────────────
   if (window.innerWidth <= 768) {
     document.getElementById('articles-table-wrap').style.display = 'none';
     const cardList = document.getElementById('articles-card-list');
     cardList.style.display = 'block';
-    if (filtered.length === 0) {
-      cardList.innerHTML = `<div class="empty-state" style="padding:32px 16px;text-align:center;"><p>Aucun article trouvé</p></div>`;
-      return;
-    }
-    cardList.innerHTML = filtered.map(a => {
-      const priceUS = (a.ratio && a.priceUC) ? (a.priceUC / a.ratio) : 0;
-      const alertDot = isIncomplete ? `<span style="color:var(--warning);margin-left:6px;font-size:.85rem;">⚠</span>` : '';
-      const catColors = { FOOD:'var(--olive)', BEVERAGE:'var(--forest)', CLEANING:'var(--clay)', 'ONE WAY':'#888', OFFICE:'#888' };
-      const catLabels = { FOOD:'Food', BEVERAGE:'Boisson', CLEANING:'Entretien', 'ONE WAY':'One Way', OFFICE:'Bureau' };
-      const artName = a.name || a.nom || '';
-      const artSupplier = a.supplier || a.fournisseur || '';
-      const artUc = a.uc || '';
-      const artPrice = a.priceUC || a.prixUc || 0;
-      const artRatio = a.ratio || a.ratioUsUc || 1;
-      const artUs    = a.us || '';
-      const isIncomplete = !artPrice || !artRatio || !artUs;
-      const subParts = [
-        artSupplier ? escHtml(artSupplier) : null,
-        artUc       ? escHtml(artUc)       : null,
-      ].filter(Boolean).join(' · ');
-      return `<div class="article-card-mob" onclick="editArticle('${a.id}')">
-        <div class="art-card-main">
-          <div class="art-card-name">${escHtml(artName)}${alertDot}</div>
-          <div class="art-card-sub">
-            <span class="art-cat-badge" style="background:${catColors[a.category]||'#888'};">${catLabels[a.category]||a.category}</span>
-            ${subParts ? `<span class="art-card-supplier">${subParts}</span>` : ''}
+    const catColors = { FOOD:'var(--olive)', BEVERAGE:'var(--forest)', CLEANING:'var(--clay)', 'ONE WAY':'#888', OFFICE:'#888' };
+    const catLabels = { FOOD:'Food', BEVERAGE:'Boisson', CLEANING:'Entretien', 'ONE WAY':'One Way', OFFICE:'Bureau' };
+    if (!filtered.length) {
+      cardList.innerHTML = '<div class="empty-state" style="padding:32px;text-align:center;"><p>Aucun article trouvé</p></div>';
+    } else {
+      cardList.innerHTML = filtered.map(a => {
+        const isInc = !a.priceUC || !a.ratio || !a.us;
+        const dot   = isInc ? '<span style="color:var(--warning);margin-left:5px;font-size:.85rem;">⚠</span>' : '';
+        const sub   = [a.supplier ? escHtml(a.supplier) : null, a.uc ? escHtml(a.uc) : null].filter(Boolean).join(' · ');
+        return `<div class="article-card-mob" onclick="editArticle('${a.id}')">
+          <div class="art-card-main">
+            <div class="art-card-name">${escHtml(a.name)}${dot}</div>
+            <div class="art-card-sub">
+              <span class="art-cat-badge" style="background:${catColors[a.category]||'#888'};">${catLabels[a.category]||a.category}</span>
+              ${sub ? `<span class="art-card-supplier">${sub}</span>` : ''}
+            </div>
           </div>
-        </div>
-        <div class="art-card-price">${artPrice ? formatCurrency(artPrice) : '<span class="art-price-missing">— €</span>'}</div>
-      </div>`;
-    }).join('');
-    // FAB ajout article
-    let fab = document.getElementById('mob-art-fab');
-    if (!fab) {
-      fab = document.createElement('button');
-      fab.id = 'mob-art-fab';
-      fab.className = 'mob-fab';
+          <div class="art-card-price">${a.priceUC ? formatCurrency(a.priceUC) : '<span class="art-price-missing">— €</span>'}</div>
+        </div>`;
+      }).join('');
+    }
+    // FAB
+    if (!document.getElementById('mob-art-fab')) {
+      const fab = document.createElement('button');
+      fab.id = 'mob-art-fab'; fab.className = 'mob-fab';
       fab.setAttribute('aria-label', 'Nouvel article');
-      fab.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
-      fab.onclick = () => document.getElementById('btn-new-article')?.click() || openModal('modal-article');
+      fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+      fab.onclick = () => document.getElementById('btn-new-article')?.click();
       document.body.appendChild(fab);
     }
     return;
-  } else {
-    document.getElementById('articles-table-wrap').style.display = '';
-    document.getElementById('articles-card-list').style.display = 'none';
-    const fab = document.getElementById('mob-art-fab');
-    if (fab) fab.style.display = 'none';
   }
+  // Desktop : afficher le tableau
+  document.getElementById('articles-table-wrap').style.display = '';
+  document.getElementById('articles-card-list').style.display = 'none';
 
   const tbody = document.getElementById('articles-body');
   if (filtered.length === 0) {
