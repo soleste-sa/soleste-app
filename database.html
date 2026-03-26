@@ -419,8 +419,12 @@ function populateSupplierSelect(selectedValue = '') {
   const sel = document.getElementById('art-supplier');
   if (!sel) return;
   const current = selectedValue || sel.value;
+  sel.innerHTML = buildSupplierOptions(current)
+    .replace('— Fournisseur —', '— Sélectionner un fournisseur —');
+}
 
-  // Fusionner : fournisseurs Firestore + noms uniques issus des articles
+// ── Options select fournisseur (réutilisable dans imports) ──
+function buildSupplierOptions(selectedValue = '') {
   const namesFromArticles = [...new Set(
     allArticles.map(a => a.supplier || a.fournisseur || '').filter(Boolean)
   )];
@@ -428,22 +432,16 @@ function populateSupplierSelect(selectedValue = '') {
   const allNames = [...new Set([...namesFromSuppliers, ...namesFromArticles])]
     .sort((a,b) => a.localeCompare(b, 'fr'));
 
-  sel.innerHTML = '<option value="">— Sélectionner un fournisseur —</option>';
+  let opts = '<option value="">— Fournisseur —</option>';
   allNames.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    if (name === current) opt.selected = true;
-    sel.appendChild(opt);
+    const sel = name === selectedValue ? ' selected' : '';
+    opts += `<option value="${escHtml(name)}"${sel}>${escHtml(name)}</option>`;
   });
-  // Valeur actuelle absente de toutes les listes → l'ajouter
-  if (current && !allNames.includes(current)) {
-    const opt = document.createElement('option');
-    opt.value = current;
-    opt.textContent = current;
-    opt.selected = true;
-    sel.appendChild(opt);
+  // Valeur existante absente de la liste
+  if (selectedValue && !allNames.includes(selectedValue)) {
+    opts += `<option value="${escHtml(selectedValue)}" selected>${escHtml(selectedValue)}</option>`;
   }
+  return opts;
 }
 
 function getEstId() {
@@ -1358,7 +1356,9 @@ function renderUnifiedRows(source) {
     const usField   = `<input type="text"   class="upr-input" value="${escHtml(item.us||item._us||'')}"    placeholder="US"    onchange="setItemField('${source}',${idx},'_us',this.value)">`;
     const ratioFld  = `<input type="number" class="upr-input" value="${item.ratio||item._ratio||1}"         placeholder="1" step="0.01" min="0" onchange="setItemField('${source}',${idx},'ratio',parseFloat(this.value)||1)">`;
     const priceFld  = `<input type="number" class="upr-input" value="${item.priceUC||''}"                   placeholder="0.00" step="0.01" min="0" onchange="setItemField('${source}',${idx},'priceUC',parseFloat(this.value)||0)">`;
-    const supField  = `<input type="text"   class="upr-input" value="${escHtml(item.supplier||item._supplier||'')}" placeholder="Fournisseur" onchange="setItemField('${source}',${idx},'supplier',this.value)">`;
+    const supVal    = item.supplier || item._supplier || '';
+    const supOptions= buildSupplierOptions(supVal);
+    const supField  = `<select class="upr-select" onchange="setItemField('${source}',${idx},'supplier',this.value)">${supOptions}</select>`;
     const codeField = `<input type="text"   class="upr-input" value="${escHtml(item.supplierCode||'')}"     placeholder="Code" onchange="setItemField('${source}',${idx},'supplierCode',this.value)">`;
 
     return `<div class="upr-grid upr-row ${rowCls}" id="upr-${source}-${idx}">
