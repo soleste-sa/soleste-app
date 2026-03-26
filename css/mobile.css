@@ -39,7 +39,7 @@
     text-align: center;
   }
   /* Cacher établissement du header sur mobile (déplacé sous header) */
-  .app-header .est-selector-wrap { display: none !important; }
+  #est-selector-wrap { display: none !important; }
   /* Cacher déconnexion texte, garder icône */
   #logout-btn span, #logout-btn .logout-label { display: none !important; }
   #logout-btn { padding: 6px !important; }

@@ -88,16 +88,28 @@ export function initMobileNav(activePage) {
 
   const drawerEst = document.getElementById('mob-drawer-est');
 
-  // Mise à jour dynamique du nom d'établissement dans le drawer
+  // Mise à jour dynamique via MutationObserver dès que le sélecteur est injecté
   const updateEstName = () => {
-    const name = document.querySelector('#est-selector option:checked')?.textContent || '';
+    const sel = document.getElementById('est-selector');
+    const name = sel ? sel.options[sel.selectedIndex]?.textContent : '';
     if (name) {
       banner.textContent = name;
       drawerEst.textContent = name;
     }
   };
-  // Observer les changements du sélecteur établissement
-  setTimeout(updateEstName, 1500);
+  // Observer l'injection du sélecteur dans le header-right
+  const observer = new MutationObserver(() => {
+    if (document.getElementById('est-selector-wrap')) {
+      updateEstName();
+      // Re-observer les changements de sélecteur
+      const sel = document.getElementById('est-selector');
+      if (sel) sel.addEventListener('change', updateEstName);
+    }
+  });
+  observer.observe(document.querySelector('.header-right') || document.body, { childList: true, subtree: true });
+  // Fallback
+  setTimeout(updateEstName, 800);
+  setTimeout(updateEstName, 2000);
   document.addEventListener('estChanged', updateEstName);
 
   // ── Open / Close ──────────────────────────────────────────
