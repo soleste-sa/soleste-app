@@ -763,11 +763,9 @@ document.getElementById('btn-export-excel').addEventListener('click', () => {
   // Construire CSV (séparateur ; pour Excel FR)
   const escape = v => {
     const s = String(v).replace(/"/g, '""');
-    return s.includes(';') || s.includes('"') || s.includes('
-') ? `"${s}"` : s;
+    return s.includes(';') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
   };
-  const csv = [headers, ...rows].map(r => r.map(escape).join(';')).join('
-');
+  const csv = [headers, ...rows].map(r => r.map(escape).join(';')).join('\n');
 
   // Télécharger
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
