@@ -204,18 +204,24 @@
     flex-wrap: wrap !important;
     gap: 10px !important;
     margin-bottom: 14px !important;
+    align-items: flex-start !important;
   }
-  .page-header > div:last-child {
+  .page-header > div:first-child { flex: 1; min-width: 0; }
+  .page-header > div:last-child,
+  .page-header > .flex {
     display: flex !important;
     gap: 8px !important;
     flex-wrap: nowrap !important;
+    align-items: center;
+    flex-shrink: 0;
   }
-  /* Cacher le texte des boutons secondaires, garder icônes */
-  .page-header .btn-secondary svg + *,
-  .page-header .btn-secondary span { display: none !important; }
-  .page-header .btn-secondary { padding: 8px 10px !important; min-width: 38px; }
-  /* Bouton primaire : garder le texte court */
-  .page-header .btn-primary { font-size: .82rem !important; padding: 8px 14px !important; }
+  /* Boutons secondaires → icône seule */
+  .page-header .btn-secondary { padding: 9px 10px !important; min-width: 40px; }
+  .page-header .btn-secondary svg { margin: 0 !important; }
+  .page-header .btn-secondary > *:not(svg) { display: none !important; }
+  /* Bouton primaire : garder le texte */
+  .page-header .btn-primary { font-size: .82rem !important; padding: 9px 14px !important; white-space: nowrap; }
+  .page-header .btn-primary > *:not(svg) { display: inline !important; }
 
   /* ─── Cards & grids ───────────────────────────────────────── */
   .form-row, .form-row-3, .grid-2, .grid-3 {
@@ -484,6 +490,25 @@
   .inv-qty-input::-webkit-outer-spin-button { -webkit-appearance: none; }
   .inv-qty-input[type=number] { -moz-appearance: textfield; }
 
+  /* ─── Scanner inventaire : compact sur mobile ────────────── */
+  /* Caméra masquée par défaut, affichée seulement si utilisateur tap scan */
+  .scan-panel {
+    border-radius: 12px !important;
+    margin-bottom: 12px !important;
+    padding: 12px 14px !important;
+  }
+  /* Réduire la hauteur du viewfinder caméra */
+  #camera-view, video {
+    max-height: 160px !important;
+    border-radius: 8px !important;
+  }
+  /* Champ de recherche manuelle plus grand */
+  #scan-search {
+    font-size: 16px !important;
+    height: 44px !important;
+    border-radius: 8px !important;
+  }
+
   /* ─── Barre flottante bas : résumé + confirmation ─────────── */
   .inv-bottom-bar {
     position: fixed;
@@ -689,5 +714,16 @@
 
   /* ─── Commandes mobile ────────────────────────────────────── */
   .order-card { border-radius: 12px !important; }
+  /* Filtres de catégorie dans nouvelle commande */
+  .order-layout .toolbar {
+    flex-wrap: wrap !important;
+    gap: 6px 4px !important;
+    padding-bottom: 8px;
+  }
+  /* Bouton "Annuler" + titre de nouvelle commande */
+  #btn-cancel-order { font-size: .82rem !important; padding: 6px 10px !important; }
+  /* Article item dans la commande */
+  .article-item-name { font-size: .85rem !important; }
+  .article-item-sub  { font-size: .72rem !important; }
 
 } /* fin @media 768px */

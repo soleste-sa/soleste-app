@@ -1017,7 +1017,7 @@ function handleBarcodeFound(code) {
   setTimeout(() => { scanCooldown = false; lastScannedCode = null; }, 2000);
 
   // Chercher l'article
-  const art = allArticles.find(a => a.codeBarres === code);
+  const art = allArticles.find(a => (a.codeBarres||a.barcode) === code);
   if (art) {
     openScanFoundModal(art);
     document.getElementById('scan-status').textContent = `✓ Code trouvé : ${art.nom}`;
@@ -1036,8 +1036,8 @@ function handleBarcodeFound(code) {
 function openScanFoundModal(article) {
   selectedArticle = article;
   document.getElementById('scan-found-info').innerHTML = `
-    <div class="fw-600">${article.nom}</div>
-    <div class="text-muted text-sm mt-8">${article.categorie} · ${article.us} · ${formatCurrency(article.prixUc / (article.ratioUsUc || 1))}/US</div>`;
+    <div class="fw-600">${article.nom||article.name}</div>
+    <div class="text-muted text-sm mt-8">${article.categorie||article.category} · ${article.us||''} · ${formatCurrency((article.prixUc||article.priceUC||0) / ((article.ratioUsUc||article.ratio) || 1))}/US</div>`;
   renderPlaceSelect('scan-found-place');
   document.getElementById('scan-found-qty').value = '1';
   openModal('modal-scan-found');
@@ -1050,7 +1050,7 @@ async function handleScanConfirm() {
   try {
     await addQuantity(currentInvId, selectedArticle, qty, place);
     closeModal('modal-scan-found');
-    toast(`+${qty} ${selectedArticle.us} · ${selectedArticle.nom}`, 'success');
+    toast(`+${qty} ${selectedArticle.us||''} · ${selectedArticle.nom||selectedArticle.name}`, 'success');
   } catch (e) {
     toast('Erreur ajout : ' + e.message, 'error');
   }
@@ -1062,10 +1062,10 @@ function performSearch() {
   if (!q) return;
 
   const matches = allArticles.filter(a =>
-    fuzzyMatch(a.nom, q) ||
-    fuzzyMatch(a.codeBarres, q) ||
-    fuzzyMatch(a.codeArticle, q) ||
-    fuzzyMatch(a.fournisseur, q)
+    fuzzyMatch(a.nom || a.name, q) ||
+    fuzzyMatch(a.codeBarres || a.barcode, q) ||
+    fuzzyMatch(a.codeArticle || a.supplierCode, q) ||
+    fuzzyMatch(a.fournisseur || a.supplier, q)
   ).slice(0, 10);
 
   const container = document.getElementById('scan-results');
@@ -1080,8 +1080,8 @@ function performSearch() {
     <div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);font-size:.85rem;transition:.15s;"
          onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''"
          onclick="selectSearchResult('${a.id}')">
-      <span style="color:var(--cream);font-weight:500;">${a.nom}</span>
-      <span style="color:rgba(245,240,232,.4);margin-left:8px;">${a.us}</span>
+      <span style="color:var(--cream);font-weight:500;">${a.nom||a.name}</span>
+      <span style="color:rgba(245,240,232,.4);margin-left:8px;">${a.us||''}</span>
     </div>`).join('');
 }
 
@@ -1090,7 +1090,7 @@ window.selectSearchResult = function(id) {
   if (!art) return;
   selectedArticle = art;
   document.getElementById('scan-results').classList.add('hidden');
-  document.getElementById('scan-selected-article').textContent = `${art.nom} (${art.us})`;
+  document.getElementById('scan-selected-article').textContent = `${art.nom||art.name} (${art.us||''})`;
   document.getElementById('scan-qty').value = '1';
   renderPlaceSelect('scan-place-select');
   document.getElementById('scan-add-row').classList.remove('hidden');
@@ -1106,7 +1106,7 @@ async function handleManualAdd() {
     document.getElementById('scan-add-row').classList.add('hidden');
     document.getElementById('scan-selected-article').textContent = '—';
     selectedArticle = null;
-    toast(`Ajouté : ${qty} × ${selectedArticle?.nom || 'article'}`, 'success');
+    toast(`Ajouté : ${qty} × ${selectedArticle?.nom || selectedArticle?.name || 'article'}`, 'success');
   } catch (e) {
     toast('Erreur ajout', 'error');
   }

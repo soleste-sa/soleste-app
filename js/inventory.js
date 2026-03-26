@@ -134,14 +134,20 @@ export async function addQuantity(inventoryId, article, quantite, place) {
     });
     return lineDoc.id;
   } else {
+    // Support des deux schémas : legacy (nom/prixUc/ratioUsUc) et nouveau (name/priceUC/ratio)
+    const artNom   = article.nom      || article.name      || '';
+    const artUs    = article.us       || '';
+    const artCat   = article.categorie|| article.category  || 'FOOD';
+    const artPrixUc= article.prixUc   || article.priceUC   || 0;
+    const artRatio = article.ratioUsUc|| article.ratio      || 1;
     const ref = await addDoc(collection(db, COL_LINES), {
       inventoryId,
       articleId:   article.id,
-      articleNom:  article.nom,
-      articleUs:   article.us,
-      categorie:   article.categorie,
+      articleNom:  artNom,
+      articleUs:   artUs,
+      categorie:   artCat,
       place:       place || '',
-      prixUs:      article.prixUc / (article.ratioUsUc || 1),
+      prixUs:      artPrixUc / (artRatio || 1),
       quantite:    parseFloat(quantite),
       createdAt:   serverTimestamp(),
       updatedAt:   serverTimestamp(),
