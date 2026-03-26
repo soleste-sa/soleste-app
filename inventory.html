@@ -489,9 +489,12 @@ async function renderSummary() {
         </td>
         ${cats.map(c => `<td class="val">${byCat[c] ? formatCurrency(byCat[c].value) : '—'}</td>`).join('')}
         <td class="total">${formatCurrency(total)}</td>
-        <td>
+        <td style="display:flex;gap:6px;align-items:center;">
           <button class="btn-open-inv" onclick="openInventory('${inv.id}')">
             ${inv.status==='open'?'Continuer':'Consulter'}
+          </button>
+          <button class="btn-open-inv" onclick="confirmDeleteInventory('${inv.id}')" style="border-color:var(--danger);color:var(--danger);" title="Supprimer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
           </button>
         </td>
       </tr>`;
@@ -1130,6 +1133,26 @@ async function generatePDF(mois) {
   win.document.close();
   setTimeout(() => win.print(), 500);
 }
+
+// ── Suppression inventaire ───────────────────────────────────
+window.confirmDeleteInventory = async function(id) {
+  const inv = allInventories.find(i => i.id === id);
+  if (!inv) return;
+  const [y,m] = (inv.mois||'').split('-');
+  const label = m ? `${MONTHS[parseInt(m)-1]} ${y}` : inv.mois;
+  if (!confirm(`Supprimer l'inventaire ${label} · ${inv.place||'—'} ?
+
+Cette action est irréversible.`)) return;
+  try {
+    await deleteInventoryFull(id);
+    allInventories = allInventories.filter(i => i.id !== id);
+    delete invLinesCache[id];
+    toast('Inventaire supprimé', 'success');
+    renderSummary();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
 
 // ── Utilitaires ──────────────────────────────────────────────
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
