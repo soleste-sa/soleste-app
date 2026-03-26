@@ -91,13 +91,6 @@
       </div>
     </div>
 
-    <div class="stat-chips">
-      <div class="stat-chip"><div class="chip-val" id="stat-articles">–</div><div class="chip-label">Articles</div></div>
-      <div class="stat-chip"><div class="chip-val" id="stat-recipes">–</div><div class="chip-label">Recettes</div></div>
-      <div class="stat-chip"><div class="chip-val" id="stat-inventories">–</div><div class="chip-label">Inventaires</div></div>
-      <div class="stat-chip"><div class="chip-val" id="stat-orders">–</div><div class="chip-label">Commandes</div></div>
-    </div>
-
     <div class="module-cards">
       <a href="database.html" class="module-card mod-db"><div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div><div><h3>Base articles</h3><small id="db-count">–</small></div></a>
       <a href="menu.html" class="module-card mod-menu"><div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><h3>Menu engineering</h3><small id="menu-count">–</small></div></a>
@@ -200,10 +193,8 @@ async function loadCounts() {
       getCountFromServer(query(collection(db,'orders'),     where('estId','==',window.__estId||'panoramique'))),
     ]);
     const na=art.data().count, nr=rec.data().count, ni=inv.data().count, no=ord.data().count;
-    document.getElementById('stat-articles').textContent    = na;
-    document.getElementById('stat-recipes').textContent     = nr;
-    document.getElementById('stat-inventories').textContent = ni;
-    document.getElementById('stat-orders').textContent      = no;
+    // Compteurs affichés dans les module-cards
+    // (stat-chips supprimés — redondants avec module-cards)
     document.getElementById('db-count').textContent   = `${na} article${na>1?'s':''}`;
     document.getElementById('menu-count').textContent = `${nr} fiche${nr>1?'s':''}`;
     document.getElementById('inv-count').textContent  = `${ni} inventaire${ni>1?'s':''}`;
