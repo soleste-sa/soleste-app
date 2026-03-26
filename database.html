@@ -503,23 +503,29 @@ function renderTable() {
     }
     cardList.innerHTML = filtered.map(a => {
       const priceUS = (a.ratio && a.priceUC) ? (a.priceUC / a.ratio) : 0;
-      const isIncomplete = !a.priceUC || !a.ratio || !a.us;
       const alertDot = isIncomplete ? `<span style="color:var(--warning);margin-left:6px;font-size:.85rem;">⚠</span>` : '';
       const catColors = { FOOD:'var(--olive)', BEVERAGE:'var(--forest)', CLEANING:'var(--clay)', 'ONE WAY':'#888', OFFICE:'#888' };
       const catLabels = { FOOD:'Food', BEVERAGE:'Boisson', CLEANING:'Entretien', 'ONE WAY':'One Way', OFFICE:'Bureau' };
+      const artName = a.name || a.nom || '';
+      const artSupplier = a.supplier || a.fournisseur || '';
+      const artUc = a.uc || '';
+      const artPrice = a.priceUC || a.prixUc || 0;
+      const artRatio = a.ratio || a.ratioUsUc || 1;
+      const artUs    = a.us || '';
+      const isIncomplete = !artPrice || !artRatio || !artUs;
       const subParts = [
-        a.supplier ? escHtml(a.supplier) : null,
-        a.uc       ? escHtml(a.uc)       : null,
+        artSupplier ? escHtml(artSupplier) : null,
+        artUc       ? escHtml(artUc)       : null,
       ].filter(Boolean).join(' · ');
       return `<div class="article-card-mob" onclick="editArticle('${a.id}')">
         <div class="art-card-main">
-          <div class="art-card-name">${escHtml(a.name)}${alertDot}</div>
+          <div class="art-card-name">${escHtml(artName)}${alertDot}</div>
           <div class="art-card-sub">
             <span class="art-cat-badge" style="background:${catColors[a.category]||'#888'};">${catLabels[a.category]||a.category}</span>
             ${subParts ? `<span class="art-card-supplier">${subParts}</span>` : ''}
           </div>
         </div>
-        <div class="art-card-price">${a.priceUC ? formatCurrency(a.priceUC) : '<span class="art-price-missing">— €</span>'}</div>
+        <div class="art-card-price">${artPrice ? formatCurrency(artPrice) : '<span class="art-price-missing">— €</span>'}</div>
       </div>`;
     }).join('');
     // FAB ajout article

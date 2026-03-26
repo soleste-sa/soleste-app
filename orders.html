@@ -403,11 +403,24 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
   const estId = window.__estId || 'panoramique';
-  const [artSnap, supSnap] = await Promise.all([
-    getDocs(query(collection(db, 'articles'), where('estId','==',estId), orderBy('name'))),
+  let artSnap;
+  try {
+    artSnap = await getDocs(query(collection(db, 'articles'), where('estId','==',estId), orderBy('name')));
+    if (!artSnap.docs.length) throw new Error('fallback');
+  } catch(_) {
+    try {
+      artSnap = await getDocs(query(collection(db, 'articles'), where('estId','==',estId), orderBy('nom')));
+    } catch(__) {
+      artSnap = await getDocs(query(collection(db, 'articles'), where('estId','==',estId)));
+    }
+  }
+  const [, supSnap] = await Promise.all([
+    Promise.resolve(),
     getDocs(query(collection(db, 'suppliers'), where('estId','==',estId))),
   ]);
-  allArticles  = artSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  allArticles = artSnap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a,b) => (a.name||a.nom||'').localeCompare(b.name||b.nom||'', 'fr'));
   allSuppliers = supSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
   // Historique en temps réel
@@ -462,7 +475,7 @@ function renderArticles() {
   const q = normalize(document.getElementById('order-search').value);
   let filtered = allArticles.filter(a => {
     if (activeCat !== 'ALL' && a.category !== activeCat) return false;
-    if (q && !fuzzyMatch(a.name, q) && !fuzzyMatch(a.supplier, q)) return false;
+    if (q && !fuzzyMatch(a.name||a.nom, q) && !fuzzyMatch(a.supplier||a.fournisseur, q)) return false;
     return true;
   });
 
@@ -474,10 +487,12 @@ function renderArticles() {
 
   grid.innerHTML = filtered.map(a => {
     const inCart = !!cart[a.id];
+    const artName = a.name || a.nom || '';
+    const artSup  = a.supplier || a.fournisseur || '—';
     return `<div class="article-item ${inCart ? 'in-cart' : ''}" id="art-item-${a.id}">
       <div class="article-item-left">
-        <div class="article-item-name">${escHtml(a.name)}</div>
-        <div class="article-item-sub">${escHtml(a.supplier||'—')} · ${escHtml(a.uc||'—')}</div>
+        <div class="article-item-name">${escHtml(artName)}</div>
+        <div class="article-item-sub">${escHtml(artSup)} · ${escHtml(a.uc||'—')}</div>
       </div>
       <button class="add-btn ${inCart ? 'added' : ''}" onclick="addToCart('${a.id}')" title="${inCart ? 'Déjà dans le panier' : 'Ajouter'}">
         ${inCart
@@ -551,9 +566,9 @@ async function validateOrder() {
   ids.forEach(id => {
     const art = allArticles.find(a => a.id === id);
     if (!art) return;
-    const sup = art.supplier || 'Sans fournisseur';
+    const sup = art.supplier || art.fournisseur || 'Sans fournisseur';
     if (!bySupplier[sup]) bySupplier[sup] = { items: [], status: 'draft' };
-    bySupplier[sup].items.push({ articleId: id, name: art.name, uc: art.uc||'', qty: cart[id] });
+    bySupplier[sup].items.push({ articleId: id, name: art.name||art.nom||'', uc: art.uc||'', qty: cart[id] });
   });
 
   try {

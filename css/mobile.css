@@ -215,13 +215,18 @@
     align-items: center;
     flex-shrink: 0;
   }
-  /* Boutons secondaires → icône seule */
-  .page-header .btn-secondary { padding: 9px 10px !important; min-width: 40px; }
-  .page-header .btn-secondary svg { margin: 0 !important; }
-  .page-header .btn-secondary > *:not(svg) { display: none !important; }
+  /* ─── Boutons page-header : icônes seules pour les secondaires ── */
+  /* Cibler tous les enfants texte directs des boutons secondaires */
+  .page-header .btn-secondary { padding: 9px 11px !important; }
+  .page-header .btn-secondary svg { flex-shrink: 0; }
+  /* Masquer tout ce qui suit le SVG dans un bouton secondaire */
+  .page-header .btn-secondary svg ~ * { display: none !important; }
+  /* IDs spécifiques en plus */
+  #btn-import-excel svg ~ *,
+  #btn-ocr svg ~ * { display: none !important; }
+  #btn-import-excel, #btn-ocr { padding: 9px 11px !important; }
   /* Bouton primaire : garder le texte */
   .page-header .btn-primary { font-size: .82rem !important; padding: 9px 14px !important; white-space: nowrap; }
-  .page-header .btn-primary > *:not(svg) { display: inline !important; }
 
   /* ─── Cards & grids ───────────────────────────────────────── */
   .form-row, .form-row-3, .grid-2, .grid-3 {
