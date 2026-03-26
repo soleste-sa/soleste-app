@@ -34,6 +34,13 @@ export async function deletePlace(id) {
   await deleteDoc(doc(db, COL_PLACES(), id));
 }
 
+export async function renamePlace(id, newNom) {
+  await updateDoc(doc(db, COL_PLACES(), id), {
+    nom: String(newNom).trim(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export function listenPlaces(callback) {
   try {
     return onSnapshot(
