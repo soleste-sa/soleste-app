@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOLESTE — Food Cost</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
     .results-wrapper { overflow-x: auto; padding-bottom: 16px; }
@@ -109,6 +110,7 @@ import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initEstablishment, getActiveEstId, setActiveEstId, estDocKey } from './js/establishment.js';
+import { initMobileNav } from './js/mobile.js';
 import { renderEstSelector } from './js/est-header.js';
 import { toast } from './js/utils.js';
 import { MONTHS, docKey, fmtEur, fmtPct, calcFoodCost } from './js/kpi.js';
@@ -127,6 +129,7 @@ onAuthStateChanged(auth, async user => {
   // ── Établissement actif ──────────────────────────────────
   const estInfo = await initEstablishment(user.email);
   window.__estId   = estInfo.estId   || 'panoramique';
+  initMobileNav('foodcost.html');
   window.__estName = estInfo.estName || 'Le Panoramique';
   window.__isMaster = estInfo.isMaster || false;
   renderEstSelector(estInfo.establishments, window.__estId, null);

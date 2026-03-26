@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOLESTE — Inventaire</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <style>
     /* ── Scan Zone ── */
     .scan-panel {
@@ -424,6 +425,7 @@
 import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establishment.js';
+import { initMobileNav } from './js/mobile.js';
 import { renderEstSelector } from './js/est-header.js';
 import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, formatCurrency, formatDate, formatDateTime, showLoading, hideLoading } from './js/utils.js';
 import {
@@ -462,6 +464,7 @@ onAuthStateChanged(auth, async user => {
   // ── Établissement actif ──────────────────────────────────
   const estInfo = await initEstablishment(user.email);
   window.__estId   = estInfo.estId   || 'panoramique';
+  initMobileNav('inventory.html');
   window.__estName = estInfo.estName || 'Le Panoramique';
   window.__isMaster = estInfo.isMaster || false;
   renderEstSelector(estInfo.establishments, window.__estId, null);
@@ -529,6 +532,8 @@ async function loadInventory(inv) {
     invLines = lines;
     renderLines();
     updateTotal();
+    injectMobBottomBar();
+    updateMobBottomBar();
   });
 }
 
@@ -577,49 +582,154 @@ function renderLines(filter = '') {
     groups[p].push(l);
   });
 
-  let html = `<div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Article</th>
-          <th>Catégorie</th>
-          <th>Lieu</th>
-          <th style="text-align:right;">Quantité</th>
-          <th style="text-align:right;">Prix US</th>
-          <th style="text-align:right;">Valeur</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>`;
+  const isMobile = window.innerWidth <= 768;
+  const isConfirmed = currentInvData?.status === 'confirmed';
 
-  filtered.forEach(l => {
-    const valeur = (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUs) || 0);
-    const isConfirmed = currentInvData?.status === 'confirmed';
-    html += `<tr>
-      <td class="fw-500">${l.articleNom}</td>
-      <td>${categoryBadge(l.categorie)}</td>
-      <td><span class="text-muted text-sm">${l.place || '—'}</span></td>
-      <td style="text-align:right;">
-        ${isConfirmed
-          ? `<span class="fw-600">${l.quantite} ${l.articleUs}</span>`
-          : `<input type="number" class="qty-input" value="${l.quantite}" min="0" step="0.1"
-              data-lineid="${l.id}" onchange="updateLineQty(this)">`
-        }
-      </td>
-      <td style="text-align:right;" class="mono text-sm">${formatCurrency(l.prixUs)}</td>
-      <td style="text-align:right;" class="fw-600">${formatCurrency(valeur)}</td>
-      <td>
-        ${isConfirmed ? '' : `<button class="btn btn-ghost btn-icon btn-sm" onclick="removeLine('${l.id}')" data-tooltip="Supprimer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-        </button>`}
-      </td>
-    </tr>`;
-  });
-
-  html += `</tbody></table></div>`;
-  container.innerHTML = html;
+  if (isMobile) {
+    // ── Rendu mobile : cards avec +/- ──────────────────────
+    let html = '';
+    for (const [place, lines] of Object.entries(groups)) {
+      const collapseKey = 'inv_collapse_' + place;
+      const isCollapsed = sessionStorage.getItem(collapseKey) === '1';
+      html += `<div class="inv-place-group">
+        <div class="inv-place-header ${isCollapsed ? 'collapsed' : ''}"
+             onclick="togglePlaceGroup(this, '${collapseKey}')">
+          <h3>📍 ${place}</h3>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="place-count">${lines.length} art.</span>
+            <svg class="place-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+        <div class="inv-place-body ${isCollapsed ? 'collapsed' : ''}">`;
+      lines.forEach(l => {
+        const hasQty = parseFloat(l.quantite) > 0;
+        html += `<div class="inv-article-row ${hasQty ? 'has-qty' : ''}" id="mob-row-${l.id}">
+          <div class="inv-art-info">
+            <div class="inv-art-name">${l.articleNom}</div>
+            <div class="inv-art-sub">${l.articleUs || ''}${l.prixUs ? ' · ' + formatCurrency(l.prixUs) : ''}</div>
+          </div>
+          ${isConfirmed
+            ? `<span class="fw-600">${l.quantite} ${l.articleUs}</span>`
+            : `<div class="inv-qty-ctrl">
+                <button class="inv-qty-btn minus" onclick="mobQtyStep('${l.id}', -1)" aria-label="Moins">−</button>
+                <input type="number" class="inv-qty-input" inputmode="decimal"
+                  value="${l.quantite}" min="0" step="0.1"
+                  data-lineid="${l.id}"
+                  onchange="updateLineQty(this)"
+                  onfocus="this.select()">
+                <button class="inv-qty-btn plus" onclick="mobQtyStep('${l.id}', 1)" aria-label="Plus">+</button>
+              </div>`
+          }
+        </div>`;
+      });
+      html += `</div></div>`;
+    }
+    container.innerHTML = html;
+    updateMobBottomBar();
+  } else {
+    // ── Rendu desktop : tableau classique ──────────────────
+    let html = `<div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Article</th>
+            <th>Catégorie</th>
+            <th>Lieu</th>
+            <th style="text-align:right;">Quantité</th>
+            <th style="text-align:right;">Prix US</th>
+            <th style="text-align:right;">Valeur</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>`;
+    filtered.forEach(l => {
+      const valeur = (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUs) || 0);
+      html += `<tr>
+        <td class="fw-500">${l.articleNom}</td>
+        <td>${categoryBadge(l.categorie)}</td>
+        <td><span class="text-muted text-sm">${l.place || '—'}</span></td>
+        <td style="text-align:right;">
+          ${isConfirmed
+            ? `<span class="fw-600">${l.quantite} ${l.articleUs}</span>`
+            : `<input type="number" class="qty-input" value="${l.quantite}" min="0" step="0.1"
+                data-lineid="${l.id}" onchange="updateLineQty(this)">`
+          }
+        </td>
+        <td style="text-align:right;" class="mono text-sm">${formatCurrency(l.prixUs)}</td>
+        <td style="text-align:right;" class="fw-600">${formatCurrency(valeur)}</td>
+        <td>
+          ${isConfirmed ? '' : `<button class="btn btn-ghost btn-icon btn-sm" onclick="removeLine('${l.id}')" data-tooltip="Supprimer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>`}
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+  }
 
   document.getElementById('lines-count').textContent = `${filtered.length} ligne${filtered.length > 1 ? 's' : ''}`;
+}
+
+// ── Mobile : toggle groupe emplacement ───────────────────────
+window.togglePlaceGroup = function(header, key) {
+  const body = header.nextElementSibling;
+  const collapsed = header.classList.toggle('collapsed');
+  body.classList.toggle('collapsed', collapsed);
+  sessionStorage.setItem(key, collapsed ? '1' : '0');
+};
+
+// ── Mobile : +/- boutons quantité ────────────────────────────
+window.mobQtyStep = async function(lineId, delta) {
+  const input = document.querySelector(`.inv-qty-input[data-lineid="${lineId}"]`);
+  if (!input) return;
+  const current = parseFloat(input.value) || 0;
+  const newVal  = Math.max(0, Math.round((current + delta) * 10) / 10);
+  input.value   = newVal;
+  const row = document.getElementById('mob-row-' + lineId);
+  try {
+    await setQuantity(lineId, newVal);
+    if (row) {
+      row.classList.toggle('has-qty', newVal > 0);
+      row.classList.add('flash-green');
+      setTimeout(() => row.classList.remove('flash-green'), 500);
+    }
+    updateMobBottomBar();
+  } catch(e) { toast('Erreur', 'error'); }
+};
+
+// ── Mobile : barre flottante résumé ──────────────────────────
+function updateMobBottomBar() {
+  if (window.innerWidth > 768) return;
+  let bar = document.getElementById('inv-mob-bottom-bar');
+  if (!bar) return;
+  const total = invLines.filter(l => parseFloat(l.quantite) > 0).length;
+  const val   = calcInventoryValue(invLines);
+  bar.querySelector('.inv-summary strong').textContent = `${total} article${total > 1 ? 's' : ''} saisis`;
+  bar.querySelector('.inv-summary span').textContent   = formatCurrency(val);
+}
+
+// ── Injecter barre flottante sur mobile ───────────────────────
+function injectMobBottomBar() {
+  if (window.innerWidth > 768) return;
+  if (document.getElementById('inv-mob-bottom-bar')) return;
+  const isConfirmed = currentInvData?.status === 'confirmed';
+  const bar = document.createElement('div');
+  bar.className = 'inv-bottom-bar';
+  bar.id = 'inv-mob-bottom-bar';
+  bar.innerHTML = `
+    <div class="inv-summary">
+      <strong>0 article saisi</strong>
+      <span>0,00 €</span>
+    </div>
+    ${isConfirmed ? '' : `<button class="btn-confirm-inv" onclick="document.getElementById('btn-confirm-inv').click()">
+      ✓ Confirmer
+    </button>`}
+  `;
+  document.body.appendChild(bar);
+  updateMobBottomBar();
 }
 
 window.updateLineQty = async function(input) {
@@ -627,6 +737,14 @@ window.updateLineQty = async function(input) {
   const qty    = parseFloat(input.value) || 0;
   try {
     await setQuantity(lineId, qty);
+    // Flash vert sur mobile
+    const row = document.getElementById('mob-row-' + lineId);
+    if (row) {
+      row.classList.toggle('has-qty', qty > 0);
+      row.classList.add('flash-green');
+      setTimeout(() => row.classList.remove('flash-green'), 500);
+    }
+    updateMobBottomBar();
   } catch (e) {
     toast('Erreur mise à jour', 'error');
   }

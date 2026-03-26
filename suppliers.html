@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOLESTE — Fournisseurs</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <style>
     .supplier-card {
       background: var(--white);
@@ -181,6 +182,7 @@ import {
   getDocs, onSnapshot, query, orderBy, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establishment.js';
+import { initMobileNav } from './js/mobile.js';
 import { renderEstSelector } from './js/est-header.js';
 import { toast, openModal, closeModal, setupModalClose, normalize, fuzzyMatch, debounce } from './js/utils.js';
 
@@ -208,6 +210,7 @@ onAuthStateChanged(auth, async user => {
   // ── Établissement actif ──────────────────────────────────
   const estInfo = await initEstablishment(user.email);
   window.__estId   = estInfo.estId   || 'panoramique';
+  initMobileNav('suppliers.html');
   window.__estName = estInfo.estName || 'Le Panoramique';
   window.__isMaster = estInfo.isMaster || false;
   renderEstSelector(estInfo.establishments, window.__estId, null);

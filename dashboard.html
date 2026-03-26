@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOLESTE — Tableau de bord</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/mobile.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
     .welcome-banner { background:linear-gradient(135deg,var(--forest-dk) 0%,var(--forest) 100%); border-radius:var(--radius-xl); padding:24px 32px; color:var(--cream); margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden; }
@@ -158,6 +159,7 @@ import { MONTHS, MONTHS_FULL, docKey, fmtEur, fmtPct, fmtNum, calcRoom, calcFnb,
 const eKey = (y, m) => estDocKey(window.__estId || 'panoramique', y, m);
 import { getSettings } from './js/settings.js';
 import { initEstablishment, getActiveEstId, setActiveEstId, estDocKey } from './js/establishment.js';
+import { initMobileNav } from './js/mobile.js';
 import { renderEstSelector } from './js/est-header.js';
 
 let hourlyCost = 0;
@@ -171,6 +173,7 @@ onAuthStateChanged(auth, async user => {
   // ── Établissement actif ──────────────────────────────────
   const estInfo = await initEstablishment(user.email);
   window.__estId   = estInfo.estId   || 'panoramique';
+  initMobileNav('dashboard.html');
   window.__estName = estInfo.estName || 'Le Panoramique';
   window.__isMaster = estInfo.isMaster || false;
   renderEstSelector(estInfo.establishments, window.__estId, null);
