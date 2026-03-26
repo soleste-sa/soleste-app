@@ -852,6 +852,7 @@ async function handleImportFile(file) {
     // Normaliser les clés pour matcher insensible casse/accents/espaces/tirets
     const norm = s => String(s||'').toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[().'*]+/g,'')
       .replace(/[-_\s]+/g,' ').trim();
 
     // Construire un index des clés normalisées
@@ -867,23 +868,72 @@ async function handleImportFile(file) {
       return '';
     };
 
+    // ── Mapping étendu : toutes variantes FR/NL/EN ──────────
+    // Fallback : si aucune colonne nom reconnue, tenter la 1ère colonne
+    const firstCol = rows.length > 0 ? Object.keys(rows[0])[0] : null;
+    const getOrFirst = (r, ...aliases) => {
+      const v = get(r, ...aliases);
+      if (v) return v;
+      // Si le premier alias normalisé ne match rien, essayer la première colonne comme nom
+      return '';
+    };
+
     importData = rows.map(r => ({
       estId:        getEstId(),
-      name:         get(r,'Nom','Name','Article','Libellé','Libelle','Description') || '',
-      category:     get(r,'Catégorie','Categorie','Category','Cat') || 'FOOD',
-      uc:           get(r,'UC','Unité commande','Unite commande','Unit','Conditionnement') || '',
-      us:           get(r,'US','Unité stockage','Unite stockage','Unité de stockage') || '',
-      ratio:        parseFloat(get(r,'Ratio','ratio','Qté/UC','Qte UC','Quantité UC')) || 0,
-      priceUC:      parseFloat(get(r,'Prix UC','PrixUC','Prix Achat','Prix achat UC','PA','Price')) || 0,
-      supplier:     get(r,'Fournisseur','Supplier','Fournisseurs') || '',
-      supplierCode: get(r,'Code article','Code fournisseur','Ref','Référence','Reference','SKU') || '',
-      barcode:      get(r,'Code-barre','Barcode','EAN','Code barre') || '',
+      name:         get(r,
+        // FR
+        'Nom','Nom article','Nom article','Libellé','Libelle','Article','Description','Désignation','Designation','Produit',
+        // NL
+        'Naam','Artikel','Artikelnaam','Omschrijving','Benaming',
+        // EN
+        'Name','Product','Item','Label'
+      ) || (firstCol ? String(r[firstCol]||'') : ''),
+      category:     get(r,
+        'Catégorie','Categorie','Cat','Type','Famille','Famille article',
+        'Categorie artikel','Category','Cat.'
+      ) || 'FOOD',
+      uc:           get(r,
+        'UC','Unité commande','Unite commande','Unité de commande','Conditionnement','Colis',
+        'Bestel eenheid','Besteleenheid','Verpakking',
+        'Unit','Purchase unit','Order unit','Pack'
+      ) || '',
+      us:           get(r,
+        'US','Unité stockage','Unite stockage','Unité de stockage','Unité de stock',
+        'Stock eenheid','Stockeenheid','Eenheid',
+        'Stock unit','Storage unit','Unit'
+      ) || '',
+      ratio:        parseFloat(get(r,
+        'Ratio','ratio US/UC','Ratio UC/US','Qté/UC','Qte UC','Quantité UC','Nb US/UC','Nb par UC',
+        'Aantal per eenheid','Verhouding',
+        'Quantity per unit','Qty per unit','Units per case'
+      )) || 0,
+      priceUC:      parseFloat(get(r,
+        'Prix UC','Prix UC HTVA','Prix UC HT','Prix achat UC','Prix achat','PrixUC','Prix Achat','PA','PA HTVA','PA HT','Tarif',
+        'Prijs','Aankoopprijs','Prijs UC','Prijs per eenheid',
+        'Price','Unit price','Cost','Purchase price','Buy price'
+      )) || 0,
+      supplier:     get(r,
+        'Fournisseur','Fournisseurs','Fourn','Fourn.',
+        'Leverancier','Lev',
+        'Supplier','Vendor','Provider'
+      ) || '',
+      supplierCode: get(r,
+        'Code article','Code fournisseur','Code art','Ref','Référence','Reference','Réf','Ref fournisseur','Code ref',
+        'Artikelcode','Leverancierscode','Code',
+        'SKU','Item code','Article code','Ref.'
+      ) || '',
+      barcode:      get(r,
+        'Code-barre','Code barre','Barcode','EAN','EAN13','EAN-13','GTIN','UPC',
+        'Streepjescode','Barcode',
+        'Bar code','Barcode number'
+      ) || '',
     })).filter(r => r.name);
 
     // Debug: afficher les clés lues si rien ne mappe
     if (importData.length === 0 && rows.length > 0) {
-      console.warn('[SOLESTE Import] Colonnes lues dans le fichier:', Object.keys(rows[0]));
-      toast('Colonnes non reconnues. Vérifiez les en-têtes du fichier.', 'warning');
+      const cols = Object.keys(rows[0]);
+      console.warn('[SOLESTE Import] Colonnes lues dans le fichier:', cols);
+      toast(`Colonnes non reconnues : ${cols.slice(0,5).join(', ')}${cols.length>5?'…':''}. Attendu : Nom, Catégorie, UC, US, Ratio, Prix UC, Fournisseur`, 'warning');
     }
 
     // Detect duplicates
