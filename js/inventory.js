@@ -1,30 +1,32 @@
 // ============================================================
-// SOLESTE — Module Inventaire (Firestore)
+// SOLESTE — Module Inventaire v2
 // ============================================================
 import { db } from './firebase.js';
 import {
   collection, doc, addDoc, updateDoc, deleteDoc,
-  getDocs, getDoc, query, orderBy, where,
-  serverTimestamp, onSnapshot
+  getDocs, query, orderBy, where, serverTimestamp, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Collections
 const COL_INV   = 'inventories';
 const COL_LINES = 'inventory_lines';
-const COL_PLACES = () => `places_${(typeof window !== 'undefined' && window.__estId) || 'panoramique'}`;
+const estId = () => (typeof window !== 'undefined' && window.__estId) || 'panoramique';
+const COL_PLACES = () => `places_${estId()}`;
 
-// ──────────────────────────────────────────────────────────────
-// PLACES (emplacements de stock)
-// ──────────────────────────────────────────────────────────────
+// ── Places ───────────────────────────────────────────────────
 export async function getPlaces() {
-  const snap = await getDocs(query(collection(db, COL_PLACES()), orderBy('nom')));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  try {
+    const snap = await getDocs(query(collection(db, COL_PLACES()), orderBy('nom')));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {
+    const snap = await getDocs(collection(db, COL_PLACES()));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (a.nom||'').localeCompare(b.nom||'', 'fr'));
+  }
 }
 
 export async function createPlace(nom) {
-  return await addDoc(collection(db, COL_PLACES()), {
-    nom: String(nom).trim(),
-    createdAt: serverTimestamp()
+  return addDoc(collection(db, COL_PLACES()), {
+    nom: String(nom).trim(), createdAt: serverTimestamp()
   });
 }
 
@@ -33,194 +35,125 @@ export async function deletePlace(id) {
 }
 
 export function listenPlaces(callback) {
-  return onSnapshot(
-    query(collection(db, COL_PLACES()), orderBy('nom')),
-    snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-  );
+  try {
+    return onSnapshot(
+      query(collection(db, COL_PLACES()), orderBy('nom')),
+      snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+  } catch {
+    return onSnapshot(collection(db, COL_PLACES()),
+      snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+  }
 }
 
-// ──────────────────────────────────────────────────────────────
-// INVENTAIRES
-// ──────────────────────────────────────────────────────────────
-
-// Créer un nouvel inventaire (en cours)
-export async function createInventory(data) {
+// ── Inventaires ──────────────────────────────────────────────
+export async function createInventory({ mois, place, createdBy }) {
   const ref = await addDoc(collection(db, COL_INV), {
-    estId: (typeof window !== 'undefined' && window.__estId) || 'panoramique',
-    date:       data.date || new Date().toISOString().slice(0, 10),
-    places:     data.places || [],
-    createdBy:  data.createdBy || '',
-    createdByEmail: data.createdByEmail || '',
-    status:     'draft',   // draft | confirmed
-    createdAt:  serverTimestamp(),
-    updatedAt:  serverTimestamp(),
+    estId: estId(), mois, place,
+    status: 'open', createdBy,
+    createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   });
   return ref;
 }
 
-// Confirmer un inventaire (figer les quantités)
-export async function confirmInventory(id) {
-  await updateDoc(doc(db, COL_INV, id), {
-    status:    'confirmed',
-    confirmedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+export async function getAllInventories() {
+  try {
+    const snap = await getDocs(query(collection(db, COL_INV),
+      where('estId','==', estId()), orderBy('mois', 'desc')));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {
+    const snap = await getDocs(query(collection(db, COL_INV), where('estId','==', estId())));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.mois||'').localeCompare(a.mois||''));
+  }
 }
 
-// Supprimer un inventaire et ses lignes
-export async function deleteInventory(id) {
-  // Supprimer les lignes
-  const linesSnap = await getDocs(
-    query(collection(db, COL_LINES), where('inventoryId', '==', id))
-  );
-  const promises = linesSnap.docs.map(d => deleteDoc(d.ref));
-  await Promise.all(promises);
+export async function closeInventory(id) {
+  await updateDoc(doc(db, COL_INV, id), { status:'closed', updatedAt: serverTimestamp() });
+}
+
+export async function reopenInventory(id) {
+  await updateDoc(doc(db, COL_INV, id), { status:'open', updatedAt: serverTimestamp() });
+}
+
+export async function deleteInventoryFull(id) {
+  const lines = await getDocs(query(collection(db, COL_LINES), where('inventoryId','==', id)));
+  await Promise.all(lines.docs.map(d => deleteDoc(d.ref)));
   await deleteDoc(doc(db, COL_INV, id));
 }
 
-// Récupérer tous les inventaires (historique)
-export async function getAllInventories() {
-  const snap = await getDocs(
-    query(collection(db, COL_INV), where('estId','==', (typeof window !== 'undefined' && window.__estId) || 'panoramique'), orderBy('createdAt', 'desc'))
-  );
+// ── Lignes ───────────────────────────────────────────────────
+export async function getLines(inventoryId) {
+  const snap = await getDocs(query(collection(db, COL_LINES), where('inventoryId','==', inventoryId)));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-// Écoute temps réel inventaires
-export function listenInventories(callback) {
+export function listenLines(inventoryId, callback) {
   return onSnapshot(
-    query(collection(db, COL_INV), where('estId','==', (typeof window !== 'undefined' && window.__estId) || 'panoramique'), orderBy('createdAt', 'desc')),
+    query(collection(db, COL_LINES), where('inventoryId','==', inventoryId)),
     snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   );
 }
 
-// ──────────────────────────────────────────────────────────────
-// LIGNES D'INVENTAIRE
-// ──────────────────────────────────────────────────────────────
+export async function setLine(inventoryId, article, quantity) {
+  const name     = article.name || article.nom || '';
+  const category = article.category || article.categorie || 'FOOD';
+  const us       = article.us || '';
+  const priceUC  = parseFloat(article.priceUC || article.prixUc) || 0;
+  const ratio    = parseFloat(article.ratio || article.ratioUsUc) || 1;
+  const priceUs  = ratio > 0 ? priceUC / ratio : 0;
 
-// Récupérer les lignes d'un inventaire
-export async function getInventoryLines(inventoryId) {
-  const snap = await getDocs(
-    query(collection(db, COL_LINES), where('inventoryId', '==', inventoryId))
-  );
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-}
-
-// Écouter les lignes en temps réel
-export function listenInventoryLines(inventoryId, callback) {
-  return onSnapshot(
-    query(collection(db, COL_LINES), where('inventoryId', '==', inventoryId)),
-    snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-  );
-}
-
-// Ajouter ou mettre à jour une quantité pour un article dans un inventaire
-// Mode additif : chaque scan ou saisie AJOUTE à la quantité existante
-export async function addQuantity(inventoryId, article, quantite, place) {
-  // Chercher si une ligne existe déjà pour cet article + place
-  const existing = await getDocs(query(
-    collection(db, COL_LINES),
-    where('inventoryId', '==', inventoryId),
-    where('articleId', '==', article.id),
-    where('place', '==', place || '')
-  ));
+  const existing = await getDocs(query(collection(db, COL_LINES),
+    where('inventoryId','==', inventoryId), where('articleId','==', article.id)));
 
   if (!existing.empty) {
-    const lineDoc  = existing.docs[0];
-    const oldQty   = parseFloat(lineDoc.data().quantite) || 0;
-    await updateDoc(lineDoc.ref, {
-      quantite:  oldQty + parseFloat(quantite),
-      updatedAt: serverTimestamp(),
-    });
-    return lineDoc.id;
+    await updateDoc(existing.docs[0].ref, { quantity: parseFloat(quantity)||0, updatedAt: serverTimestamp() });
+    return existing.docs[0].id;
   } else {
-    // Support des deux schémas : legacy (nom/prixUc/ratioUsUc) et nouveau (name/priceUC/ratio)
-    const artNom   = article.nom      || article.name      || '';
-    const artUs    = article.us       || '';
-    const artCat   = article.categorie|| article.category  || 'FOOD';
-    const artPrixUc= article.prixUc   || article.priceUC   || 0;
-    const artRatio = article.ratioUsUc|| article.ratio      || 1;
     const ref = await addDoc(collection(db, COL_LINES), {
-      inventoryId,
-      articleId:   article.id,
-      articleNom:  artNom,
-      articleUs:   artUs,
-      categorie:   artCat,
-      place:       place || '',
-      prixUs:      artPrixUc / (artRatio || 1),
-      quantite:    parseFloat(quantite),
-      createdAt:   serverTimestamp(),
-      updatedAt:   serverTimestamp(),
+      inventoryId, estId: estId(),
+      articleId: article.id, articleName: name,
+      articleCategory: category, articleUs: us, priceUs,
+      quantity: parseFloat(quantity)||0,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
     });
     return ref.id;
   }
 }
 
-// Modifier directement la quantité d'une ligne
-export async function setQuantity(lineId, quantite) {
-  await updateDoc(doc(db, COL_LINES, lineId), {
-    quantite:  parseFloat(quantite),
-    updatedAt: serverTimestamp(),
-  });
+export async function addDelta(inventoryId, article, delta) {
+  const existing = await getDocs(query(collection(db, COL_LINES),
+    where('inventoryId','==', inventoryId), where('articleId','==', article.id)));
+  if (!existing.empty) {
+    const cur = parseFloat(existing.docs[0].data().quantity) || 0;
+    await updateDoc(existing.docs[0].ref, {
+      quantity: Math.max(0, cur + parseFloat(delta)), updatedAt: serverTimestamp()
+    });
+    return existing.docs[0].id;
+  }
+  return setLine(inventoryId, article, Math.max(0, parseFloat(delta)));
 }
 
-// Supprimer une ligne
+export async function updateLineQty(lineId, quantity) {
+  await updateDoc(doc(db, COL_LINES, lineId), { quantity: parseFloat(quantity)||0, updatedAt: serverTimestamp() });
+}
+
 export async function deleteLine(lineId) {
   await deleteDoc(doc(db, COL_LINES, lineId));
 }
 
-// ──────────────────────────────────────────────────────────────
-// CALCULS INVENTAIRE
-// ──────────────────────────────────────────────────────────────
-
-// Valeur totale de l'inventaire
-export function calcInventoryValue(lines) {
-  return lines.reduce((sum, l) => {
-    return sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prixUs) || 0);
-  }, 0);
+// ── Calculs ──────────────────────────────────────────────────
+export function calcValue(lines) {
+  return lines.reduce((s, l) => s + (parseFloat(l.quantity)||0) * (parseFloat(l.priceUs)||0), 0);
 }
 
-// Grouper les lignes par catégorie
-export function groupByCategory(lines) {
-  const groups = {};
-  lines.forEach(l => {
-    const cat = l.categorie || 'Autre';
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(l);
-  });
-  return groups;
-}
-
-// Grouper les lignes par place
-export function groupByPlace(lines) {
-  const groups = {};
-  lines.forEach(l => {
-    const place = l.place || 'Sans lieu';
-    if (!groups[place]) groups[place] = [];
-    groups[place].push(l);
-  });
-  return groups;
-}
-
-// ──────────────────────────────────────────────────────────────
-// CACHE LOCAL (inventaire en cours — avant confirmation)
-// ──────────────────────────────────────────────────────────────
-const CACHE_KEY = 'soleste_inventory_draft';
-
-export function saveDraftCache(inventoryId, lines) {
-  try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ inventoryId, lines, ts: Date.now() }));
-  } catch {}
-}
-
-export function loadDraftCache() {
-  try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch { return null; }
-}
-
-export function clearDraftCache() {
-  sessionStorage.removeItem(CACHE_KEY);
+export function calcByCategory(lines) {
+  const cats = {};
+  for (const l of lines) {
+    const cat = l.articleCategory || 'Autre';
+    if (!cats[cat]) cats[cat] = { lines: [], value: 0 };
+    cats[cat].lines.push(l);
+    cats[cat].value += (parseFloat(l.quantity)||0) * (parseFloat(l.priceUs)||0);
+  }
+  return cats;
 }
