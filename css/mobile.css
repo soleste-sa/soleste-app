@@ -522,11 +522,18 @@
   }
 
   /* ─── Résultats table → scroll horizontal ─────────────────── */
-  .results-table-wrap {
+  .results-table-wrap, .results-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-radius: 8px;
   }
+  /* Colonnes compactes en vue mois unique mobile */
+  .results-table .col-label { min-width: 120px !important; font-size: .78rem !important; padding: 7px 8px !important; }
+  .results-table .col-T,
+  .results-table .col-A,
+  .results-table .col-C,
+  .results-table .col-Y1 { min-width: 64px !important; font-size: .78rem !important; padding: 7px 4px !important; }
+  .results-table input[type=number] { font-size: 13px !important; padding: 4px !important; width: 60px !important; }
   /* Vue mois unique sur mobile */
   .results-month-selector-mob {
     display: flex !important;

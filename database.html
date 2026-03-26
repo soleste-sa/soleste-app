@@ -140,7 +140,7 @@
     </div>
 
     <!-- Table -->
-    <div class="table-wrap">
+    <div class="table-wrap" id="articles-table-wrap">
       <table id="articles-table">
         <thead>
           <tr>
@@ -160,6 +160,8 @@
         </tbody>
       </table>
     </div>
+    <!-- Cards mobile -->
+    <div id="articles-card-list" style="display:none;"></div>
   </main>
 </div>
 
@@ -489,6 +491,52 @@ function renderTable() {
   });
 
   document.getElementById('count-label').textContent = `${filtered.length} article${filtered.length>1?'s':''}`;
+
+  // ── Bifurcation mobile / desktop ─────────────────────────
+  if (window.innerWidth <= 768) {
+    document.getElementById('articles-table-wrap').style.display = 'none';
+    const cardList = document.getElementById('articles-card-list');
+    cardList.style.display = 'block';
+    if (filtered.length === 0) {
+      cardList.innerHTML = `<div class="empty-state" style="padding:32px 16px;text-align:center;"><p>Aucun article trouvé</p></div>`;
+      return;
+    }
+    cardList.innerHTML = filtered.map(a => {
+      const priceUS = (a.ratio && a.priceUC) ? (a.priceUC / a.ratio) : 0;
+      const isIncomplete = !a.priceUC || !a.ratio || !a.us;
+      const alertDot = isIncomplete ? `<span style="color:var(--warning);margin-left:6px;font-size:.85rem;">⚠</span>` : '';
+      const catColors = { FOOD:'var(--olive)', BEVERAGE:'var(--forest)', CLEANING:'var(--clay)', 'ONE WAY':'var(--muted)', OFFICE:'var(--muted)' };
+      const catLabels = { FOOD:'Food', BEVERAGE:'Boisson', CLEANING:'Entretien', 'ONE WAY':'One Way', OFFICE:'Bureau' };
+      return `<div class="article-card-mob" onclick="editArticle('${a.id}')">
+        <div class="art-card-main">
+          <div class="art-card-name">${escHtml(a.name)}${alertDot}</div>
+          <div class="art-card-sub">
+            <span style="background:${catColors[a.category]||'var(--muted)'};color:white;padding:1px 7px;border-radius:20px;font-size:.7rem;font-weight:600;">${catLabels[a.category]||a.category}</span>
+            ${a.supplier ? `<span>${escHtml(a.supplier)}</span>` : ''}
+            ${a.us ? `<span>${escHtml(a.us)}</span>` : ''}
+          </div>
+        </div>
+        <div class="art-card-price">${a.priceUC ? formatCurrency(a.priceUC) : '<span style="color:var(--warning);font-size:.8rem;">— €</span>'}</div>
+      </div>`;
+    }).join('');
+    // FAB ajout article
+    let fab = document.getElementById('mob-art-fab');
+    if (!fab) {
+      fab = document.createElement('button');
+      fab.id = 'mob-art-fab';
+      fab.className = 'mob-fab';
+      fab.setAttribute('aria-label', 'Nouvel article');
+      fab.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+      fab.onclick = () => document.getElementById('btn-new-article')?.click() || openModal('modal-article');
+      document.body.appendChild(fab);
+    }
+    return;
+  } else {
+    document.getElementById('articles-table-wrap').style.display = '';
+    document.getElementById('articles-card-list').style.display = 'none';
+    const fab = document.getElementById('mob-art-fab');
+    if (fab) fab.style.display = 'none';
+  }
 
   const tbody = document.getElementById('articles-body');
   if (filtered.length === 0) {
