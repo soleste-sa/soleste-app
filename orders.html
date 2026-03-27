@@ -388,7 +388,7 @@
 import { auth, db } from './js/firebase.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
-  collection, doc, addDoc, updateDoc, getDocs,
+  collection, doc, addDoc, updateDoc, deleteDoc, getDocs,
   onSnapshot, query, orderBy, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initEstablishment, getActiveEstId, setActiveEstId } from './js/establishment.js';
@@ -672,6 +672,11 @@ function renderHistory() {
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <span class="badge ${statusBadge[gStatus]||'badge-neutral'}">${statusLabel[gStatus]||'Brouillon'}</span>
+        <button class="btn-cancel-order-hist" onclick="event.stopPropagation();cancelOrderById('${o.id}','${date}')"
+          title="Annuler cette commande"
+          style="padding:4px 8px;border:1.5px solid var(--danger);background:none;color:var(--danger);border-radius:7px;cursor:pointer;font-size:.72rem;font-weight:600;white-space:nowrap;transition:.15s;flex-shrink:0;">
+          ✕ Annuler
+        </button>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="color:var(--muted);"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
     </div>`;
@@ -681,6 +686,17 @@ function renderHistory() {
 window.openOrderById = function(id) {
   const order = allOrders.find(o => o.id === id);
   if (order) openOrderModal(order);
+};
+
+window.cancelOrderById = async function(id, dateLabel) {
+  if (!confirm(`Annuler la commande du ${dateLabel} ?
+Cette action est irréversible.`)) return;
+  try {
+    await deleteDoc(doc(db, 'orders', id));
+    toast('Commande annulée', 'success');
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
 };
 
 // ── Modal détail commande ────────────────────────────────────
