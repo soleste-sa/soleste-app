@@ -697,7 +697,7 @@ function editArticle(id) {
 
 function updatePriceUS() {
   const price = parseFloat(document.getElementById('art-price-uc').value) || 0;
-  const ratio = parseFloat(document.getElementById('art-ratio').value) || 0;
+  const ratio = parseFloat(document.getElementById('art-ratio').value) || 1;
   const display = ratio > 0 ? formatCurrency(price / ratio, 4) : '—';
   document.getElementById('art-price-us-display').value = display;
 }
@@ -717,7 +717,7 @@ document.getElementById('btn-save-article').addEventListener('click', async () =
     category:     document.getElementById('art-category').value,
     uc:           document.getElementById('art-uc').value.trim(),
     us:           document.getElementById('art-us').value.trim(),
-    ratio:        parseFloat(document.getElementById('art-ratio').value) || 0,
+    ratio:        parseFloat(document.getElementById('art-ratio').value) || 1,
     priceUC:      parseFloat(document.getElementById('art-price-uc').value) || 0,
     supplier:     document.getElementById('art-supplier').value.trim(),
     supplierCode: document.getElementById('art-supplier-code').value.trim(),
@@ -906,7 +906,7 @@ async function handleImportFile(file) {
         'Ratio','ratio US/UC','Ratio UC/US','Qté/UC','Qte UC','Quantité UC','Nb US/UC','Nb par UC',
         'Aantal per eenheid','Verhouding',
         'Quantity per unit','Qty per unit','Units per case'
-      )) || 0,
+      )) || 1,
       priceUC:      parseFloat(get(r,
         'Prix UC','Prix UC HTVA','Prix UC HT','Prix achat UC','Prix achat','PrixUC','Prix Achat','PA','PA HTVA','PA HT','Tarif',
         'Prijs','Aankoopprijs','Prijs UC','Prijs per eenheid',
