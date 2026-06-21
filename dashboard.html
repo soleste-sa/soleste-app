@@ -308,7 +308,7 @@ async function loadKPIs(now) {
       getMonthDoc('foodcost',  year,   m),
       getMonthDoc('foodcost',  year-1, m),
     ]);
-    for (const sec of ['room','fnb','room_target','fnb_target']) {
+    for (const sec of ['room','fnb','room_target','fnb_target','gop','gop_target']) {
       agg(ytdRes[sec],   r[sec]  || {});
       agg(ytdResY1[sec], r1[sec] || {});
     }
@@ -348,7 +348,7 @@ async function loadKPIs(now) {
 }
 
 function agg(t, s) {
-  for (const f of ['incomes','payrollFixed','payrollVar','interim','roomRevenue','roomsSold','roomsAvail']) {
+  for (const f of ['incomes','payrollFixed','payrollVar','interim','roomRevenue','roomsSold','roomsAvail','gop']) {
     t[f] = (parseFloat(t[f])||0) + (parseFloat(s[f])||0);
   }
 }
